@@ -4,8 +4,6 @@ import 'package:quiz_app/theme/theme.dart';
 
 import 'package:quiz_app/model/category.dart';
 
-
-
 class ManageQuizesScreen extends StatefulWidget {
   final String? categoryId;
   const ManageQuizesScreen({super.key, this.categoryId});
@@ -31,17 +29,33 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
   }
 
   Future<void> _fetchCategories() async {
-    try{
+    try {
       final querySnapshot = await _firestore.collection('categories').get();
-      final categories = querySnapshot.docs.map((doc) => Category.fromMap(doc.id, doc.data() as Map<String, dynamic>)).toList();
-    }catch(e){
+      final categories = querySnapshot.docs
+          .map((doc) => Category.fromMap(doc.id, doc.data()))
+          .toList();
+
+      setState(() {
+        _categories = categories;
+        if (widget.categoryId != null) {
+          _initialCategory = _categories.firstWhere(
+            (category) => category.id == widget.categoryId,
+            orElse: () => Category(
+              id: widget.categoryId!,
+              name: "Unknown Category",
+              description: '',
+            ),
+          );
+          _selectedCategoryId = _initialCategory!.id;
+        }
+      });
+    } catch (e) {
       print("Error fetching categories: $e");
     }
   }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-
-    );
+    return Scaffold();
   }
 }
