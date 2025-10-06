@@ -54,8 +54,65 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
     }
   }
 
+  Stream<QuerySnapshot> _getQuizStream() {
+    Query query = _firestore.collection('quizzes');
+
+    String? filterCategoryId = _selectedCategoryId ?? widget.categoryId;
+    if (_selectedCategoryId != null) {
+      query = query.where('categoryId', isEqualTo: filterCategoryId);
+    }
+
+    return query.snapshots();
+  }
+
+  Widget _buildTitle() {
+    String? categoryId = _selectedCategoryId ?? widget.categoryId;
+    if (categoryId == null) {
+      return Text("All Quizzes", style: TextStyle(fontWeight: FontWeight.bold));
+    }
+    return StreamBuilder<DocumentSnapshot>(
+      stream: _firestore.collection('categories').doc(categoryId).snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Text(
+            "Loading....",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          );
+        }
+        final category = Category.fromMap(
+          categoryId,
+          snapshot.data!.data() as Map<String, dynamic>,
+        );
+        return Text(
+          category.name,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return Scaffold(
+      appBar: AppBar(
+        title: _buildTitle(),
+        actions: [
+          IconButton(
+              icon: Icon(Icons.add_circle_outline, color: AppTheme.primaryColor),
+              onPressed: () {
+                // Navigator.push(
+                //   context,
+                //   MaterialPageRoute(builder: builder) => AddQuizScreen(categoryId: widget.categoryId),
+                // );
+              },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [],
+      ),
+    );
   }
 }
