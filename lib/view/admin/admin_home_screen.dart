@@ -39,7 +39,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             .get();
         return {
           'name': category.data()['name'] as String,
-          'quizzes': quizCount.count, // trả về tên category và số lượng quiz
+          'count': quizCount.count, // trả về tên category và số lượng quiz
         };
       }),
     );
