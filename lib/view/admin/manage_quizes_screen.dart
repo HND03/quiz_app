@@ -85,9 +85,7 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
         );
         return Text(
           category.name,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         );
       },
     );
@@ -100,18 +98,73 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
         title: _buildTitle(),
         actions: [
           IconButton(
-              icon: Icon(Icons.add_circle_outline, color: AppTheme.primaryColor),
-              onPressed: () {
-                // Navigator.push(
-                //   context,
-                //   MaterialPageRoute(builder: builder) => AddQuizScreen(categoryId: widget.categoryId),
-                // );
-              },
+            icon: Icon(Icons.add_circle_outline, color: AppTheme.primaryColor),
+            onPressed: () {
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(builder: builder) => AddQuizScreen(categoryId: widget.categoryId),
+              // );
+            },
           ),
         ],
       ),
       body: Column(
-        children: [],
+        children: [
+          Padding(
+            padding: EdgeInsets.all(12),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                fillColor: Colors.white,
+                hintText: "Search Quizzes",
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.toLowerCase();
+                });
+              },
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(12),
+            child: DropdownButtonFormField<String>(
+              decoration: InputDecoration(
+                fillColor: Colors.white,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                border: OutlineInputBorder(),
+                hintText: "Category",
+              ),
+              value: _selectedCategoryId,
+              items: [
+                DropdownMenuItem(child: Text("All Categories"), value: null),
+                if (_initialCategory != null &&
+                    _categories.every((c) => c.id != _initialCategory!.id))
+                  DropdownMenuItem(
+                    child: Text(_initialCategory!.name),
+                    value: _initialCategory!.id,
+                  ),
+                ..._categories.map(
+                  (category) => DropdownMenuItem(
+                    child: Text(category.name),
+                    value: category.id,
+                  ),
+                ),
+              ],
+              onChanged: (value){
+                setState(() {
+                  _selectedCategoryId = value;
+                });
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
