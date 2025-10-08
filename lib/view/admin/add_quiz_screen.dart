@@ -242,10 +242,12 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
                           });
                         },
                         validator: (value) {
-                          value == null || value.isEmpty
-                              ? "Please select a category"
-                              : null;
+                          if (value == null || value.isEmpty) {
+                            return "Please select a category";
+                          }
+                          return null;
                         },
+
                       );
                     },
                   ),

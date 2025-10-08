@@ -21,7 +21,7 @@ class Quiz {
 
   factory Quiz.fromMap(String id, Map<String, dynamic> map) {
     return Quiz(
-      id: map['id'],
+      id: id,
       title: map['title'] ?? "",
       categoryId: map['categoryId'] ?? "",
       timeLimit: map['timeLimit'] ?? 0,
@@ -38,7 +38,6 @@ class Quiz {
       'categoryId': categoryId,
       'timeLimit': timeLimit,
       'questions': questions.map((e) => e.toMap()).toList(),
-      'createdAt': createdAt ?? DateTime.now(),
       'updatedAt': updatedAt ?? DateTime.now(),
     };
   }

@@ -343,6 +343,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               final quiz =
                                   latestQuizzes[index].data()
                                       as Map<String, dynamic>;
+                              final String title = quiz['title'] ?? 'No Title'; // Nếu title là null, dùng 'No Title'
+                              final Timestamp? timestamp = quiz['createdAt'] as Timestamp?; // Lấy ra an toàn
+                              final DateTime createdAt = timestamp?.toDate() ?? DateTime.now();
 
                               return Padding(
                                 padding: EdgeInsets.only(bottom: 16),
@@ -368,7 +371,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            quiz['title'],
+                                            title,
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
                                               color: AppTheme.textPrimaryColor,
@@ -376,7 +379,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                           ),
                                           SizedBox(height: 4),
                                           Text(
-                                            'Created on: ${_formatDateTime(quiz['createdAt'].toDate())}',
+                                            'Created on: ${_formatDateTime(createdAt)}',
                                             style: TextStyle(
                                               color:
                                                   AppTheme.textSecondaryColor,

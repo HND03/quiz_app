@@ -258,6 +258,7 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
                           child: Icon(
                             Icons.quiz_rounded,
                             color: AppTheme.primaryColor,
+                            size: 20,
                           ),
                         ),
                         title: Text(
@@ -275,11 +276,17 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
                               children: [
                                 Icon(Icons.question_answer_outlined, size: 16),
                                 SizedBox(width: 4),
-                                Text("${quiz.questions.length} Questions"),
+                                Text(
+                                  "${quiz.questions.length} Questions",
+                                  style: TextStyle(fontSize: 11),
+                                ),
                                 SizedBox(width: 16),
                                 Icon(Icons.timer_outlined, size: 16),
                                 SizedBox(width: 4),
-                                Text("${quiz.timeLimit} mins"),
+                                Text(
+                                  "${quiz.timeLimit} mins",
+                                  style: TextStyle(fontSize: 11),
+                                ),
                               ],
                             ),
                           ],
