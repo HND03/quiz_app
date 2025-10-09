@@ -127,12 +127,13 @@ class _EditQuizScreenState extends State<EditQuizScreen> {
         title: _titleController.text.trim(),
         timeLimit: int.parse(_timeLimitController.text),
         questions: questions,
+        createdAt: widget.quiz.createdAt,
       );
 
       await _firestore
           .collection("quizzes")
           .doc(widget.quiz.id)
-          .update(updateQuiz.toMap());
+          .update(updateQuiz.toMap(isUpdate: true));
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
