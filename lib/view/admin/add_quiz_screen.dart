@@ -7,7 +7,8 @@ import 'package:quiz_app/theme/theme.dart';
 
 class AddQuizScreen extends StatefulWidget {
   final String? categoryId;
-  const AddQuizScreen({super.key, this.categoryId});
+  final String? categoryName;
+  const AddQuizScreen({super.key, this.categoryId, this.categoryName});
 
   @override
   State<AddQuizScreen> createState() => _AddQuizScreenState();
@@ -150,12 +151,23 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
       appBar: AppBar(
         backgroundColor: AppTheme.backgroundColor,
         title: Text(
-          "Add Quiz",
+          widget.categoryName != null
+              ? "Add ${widget.categoryName} Quiz"
+              : "Add Quiz",
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: AppTheme.primaryColor,
+            color: AppTheme.textPrimaryColor,
           ),
         ),
+        actions: [
+          IconButton(
+            onPressed: _isLoading ? null : _saveQuiz,
+            icon: Icon(
+                Icons.save,
+                color: AppTheme.primaryColor
+            ),
+          ),
+        ],
       ),
       body: Form(
         key: _formKey,
@@ -247,7 +259,6 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
                           }
                           return null;
                         },
-
                       );
                     },
                   ),

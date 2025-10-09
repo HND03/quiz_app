@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:quiz_app/model/quiz.dart';
 import 'package:quiz_app/theme/theme.dart';
 import 'package:quiz_app/model/category.dart';
+import 'package:quiz_app/view/admin/edit_quiz_screen.dart';
 
 import 'add_quiz_screen.dart';
 
 class ManageQuizesScreen extends StatefulWidget {
   final String? categoryId;
-  const ManageQuizesScreen({super.key, this.categoryId});
+  final String? categoryName;
+  const ManageQuizesScreen({super.key, this.categoryId, this.categoryName});
 
   @override
   State<ManageQuizesScreen> createState() => _ManageQuizesScreenState();
@@ -113,8 +115,10 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>
-                      AddQuizScreen(categoryId: widget.categoryId),
+                  builder: (context) => AddQuizScreen(
+                    categoryId: widget.categoryId,
+                    categoryName: widget.categoryName,
+                  ),
                 ),
               );
             },
@@ -230,6 +234,7 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
                               MaterialPageRoute(
                                 builder: (context) => AddQuizScreen(
                                   categoryId: widget.categoryId,
+                                  categoryName: widget.categoryName,
                                 ),
                               ),
                             );
@@ -337,10 +342,10 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
     Quiz quiz,
   ) async {
     if (value == "edit") {
-      // Navigator.push(
-      //   context,
-      //   MaterialPageRoute(
-      //     (builder: builder) => EditQuizScreen(quiz: quiz),
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => EditQuizScreen(quiz: quiz)),
+      );
     } else if (value == "delete") {
       final confirm = await showDialog<bool>(
         context: context,
