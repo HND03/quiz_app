@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:quiz_app/theme/theme.dart';
 import 'package:quiz_app/view/admin/admin_home_screen.dart';
+import 'package:quiz_app/view/user/home_screen.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -19,7 +20,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: "Quiz App",
       theme: AppTheme.theme,
-      home: AdminHomeScreen(),
+      home: HomeScreen(),
     );
   }
 }
