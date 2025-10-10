@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:quiz_app/model/category.dart';
 import 'package:quiz_app/theme/theme.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -194,8 +195,92 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          SliverPadding(
+            padding: EdgeInsets.all(16),
+            sliver: _filteredCategories.isEmpty
+                ? SliverToBoxAdapter(
+                    child: Center(
+                      child: Text(
+                        "No Categories found",
+                        style: TextStyle(color: AppTheme.textSecondaryColor),
+                      ),
+                    ),
+                  )
+                : SliverGrid(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) =>
+                          _buildCategoryCard(_filteredCategories[index], index),
+                      childCount: _filteredCategories.length,
+                    ),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childAspectRatio: 0.8,
+                    ),
+                  ),
+          ),
         ],
       ),
     );
+  }
+
+  Widget _buildCategoryCard(Category category, int index) {
+    return Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              // Navigator.push(context, MaterialPageRoute(builder: (context) => CategoryScreen(category: category)));
+            },
+            child: Container(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.quiz,
+                      size: 48,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    category.name,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                    maxLines: 1,
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    category.description,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        )
+        .animate(delay: Duration(milliseconds: 100 * index))
+        .slideY(begin: 0.5, end: 0, duration: Duration(milliseconds: 300))
+        .fadeIn();
   }
 }
