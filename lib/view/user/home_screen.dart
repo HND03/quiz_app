@@ -265,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textSecondaryColor,
+                      color: AppTheme.textPrimaryColor,
                     ),
                     maxLines: 1,
                   ),
@@ -274,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     category.description,
                     style: TextStyle(
                       fontSize: 10,
-                      color: AppTheme.textSecondaryColor,
+                      color: AppTheme.textPrimaryColor,
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 2,
