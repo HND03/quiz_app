@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:quiz_app/model/category.dart';
 import 'package:quiz_app/theme/theme.dart';
+import 'package:quiz_app/view/user/quiz_play_screen.dart';
 
 import '../../model/quiz.dart';
 
@@ -161,10 +162,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () {
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => QuizPlayScreen(quiz: quiz)),
-              // );
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => QuizPlayScreen(quiz: quiz)),
+              );
             },
             child: Padding(
               padding: EdgeInsets.all(16),
