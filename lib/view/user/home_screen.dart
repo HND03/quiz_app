@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:quiz_app/model/category.dart';
 import 'package:quiz_app/theme/theme.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'category_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -234,7 +235,12 @@ class _HomeScreenState extends State<HomeScreen> {
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () {
-              // Navigator.push(context, MaterialPageRoute(builder: (context) => CategoryScreen(category: category)));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CategoryScreen(category: category),
+                ),
+              );
             },
             child: Container(
               padding: EdgeInsets.all(16),
