@@ -144,7 +144,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       appBar: AppBar(
         backgroundColor: AppTheme.backgroundColor,
         title: Text(
-          'Admin Dashboard',
+          'Quiz Manager',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         elevation: 0,
@@ -172,7 +172,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Welcome Admin',
+                    'Welcome User',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,

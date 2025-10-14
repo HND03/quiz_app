@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:quiz_app/model/category.dart';
 import 'package:quiz_app/theme/theme.dart';
+import '../admin/admin_home_screen.dart';
 import 'category_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -13,7 +14,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
+      GlobalKey<RefreshIndicatorState>();
   final TextEditingController _searchController = TextEditingController();
+  bool _isLoading = false;
   List<Category> _allCategories = [];
   List<Category> _filteredCategories = [];
 
@@ -28,19 +32,39 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _fetchCategories() async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('categories')
-        .orderBy('createdAt', descending: true)
-        .get();
     setState(() {
-      _allCategories = snapshot.docs
-          .map((doc) => Category.fromMap(doc.id, doc.data()))
-          .toList();
-      _categoryFilters =
-          ['All'] +
-          _allCategories.map((category) => category.name).toSet().toList();
-      _filteredCategories = _allCategories;
+      _isLoading = true;
     });
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('categories')
+          .orderBy('createdAt', descending: true)
+          .get();
+      // Kiểm tra xem widget có còn trên cây widget không trước khi gọi setState
+      if (mounted) {
+        setState(() {
+          _allCategories = snapshot.docs
+              .map((doc) => Category.fromMap(doc.id, doc.data()))
+              .toList();
+          _categoryFilters =
+              ['All'] +
+              _allCategories.map((category) => category.name).toSet().toList();
+          _filteredCategories = _allCategories;
+          // THÊM DÒNG NÀY ĐỂ ĐƯA BỘ LỌC VỀ BAN ĐẦU
+          _selectedFilter = 'All';
+          // Cũng nên reset cả ô tìm kiếm
+          _searchController.clear();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading =
+              false; // Tải xong (thành công hoặc thất bại), đặt lại thành false
+        });
+      }
+    }
   }
 
   void _filterCategories(String query, {String? categoryFilter}) {
@@ -63,165 +87,206 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 230,
-            pinned: true,
-            floating: true,
-            centerTitle: false,
-            backgroundColor: AppTheme.primaryColor,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-              ),
-            ),
-            title: Text(
-              "Quiz App",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              background: SafeArea(
-                child: Column(
-                  children: [
-                    SizedBox(height: kToolbarHeight + 16),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Welcome, Learner",
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            "Let's test your knowledge today!",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white.withOpacity(0.8),
-                            ),
-                          ),
-                          SizedBox(height: 16),
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              color: Colors.white,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: TextField(
-                              controller: _searchController,
-                              onChanged: (value) => _filterCategories(value),
-                              decoration: InputDecoration(
-                                hintText: "Search categories...",
-                                prefixIcon: Icon(
-                                  Icons.search,
-                                  color: AppTheme.primaryColor,
-                                ),
-                                suffixIcon: _searchController.text.isNotEmpty
-                                    ? IconButton(
-                                        onPressed: () {
-                                          _searchController.clear();
-                                          _filterCategories('');
-                                        },
-                                        icon: Icon(Icons.clear),
-                                        color: AppTheme.primaryColor,
-                                      )
-                                    : null,
-                                border: InputBorder.none,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Điều hướng đến màn hình AdminHomeScreen
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AdminHomeScreen()),
+          );
+        },
+        backgroundColor: AppTheme.primaryColor, // Sử dụng màu chủ đạo
+        child: Icon(
+          Icons.add, // Hoặc bạn có thể dùng Icons.add hoặc Icons.settings
+          color: Colors.white,
+        ),
+        tooltip: 'Quiz Manager', // Gợi ý nhỏ khi người dùng nhấn giữ nút
+      ),
+      body: RefreshIndicator(
+        key: _refreshIndicatorKey,
+        onRefresh: _fetchCategories,
+        color: AppTheme.primaryColor,
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 230,
+              pinned: true,
+              floating: true,
+              centerTitle: false,
+              backgroundColor: AppTheme.primaryColor,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
                 ),
               ),
-              collapseMode: CollapseMode.pin,
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Container(
-              margin: EdgeInsets.all(16),
-              height: 40,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _categoryFilters.length,
-                itemBuilder: (context, index) {
-                  final filter = _categoryFilters[index];
-                  return Padding(
-                    padding: EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(
-                        filter,
-                        style: TextStyle(
-                          color: _selectedFilter == filter
-                              ? Colors.white
-                              : AppTheme.textPrimaryColor,
+              title: GestureDetector(
+                onTap: () {
+                  // Gọi lại hàm fetch để làm mới dữ liệu
+                  _refreshIndicatorKey.currentState?.show();
+                },
+                child: Text(
+                  "Quiz App",
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              flexibleSpace: FlexibleSpaceBar(
+                background: SafeArea(
+                  child: Column(
+                    children: [
+                      SizedBox(height: kToolbarHeight + 16),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Welcome, Learner",
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              "Let's test your knowledge today!",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white.withOpacity(0.8),
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: TextField(
+                                controller: _searchController,
+                                onChanged: (value) => _filterCategories(value),
+                                decoration: InputDecoration(
+                                  hintText: "Search categories...",
+                                  prefixIcon: Icon(
+                                    Icons.search,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                  suffixIcon: _searchController.text.isNotEmpty
+                                      ? IconButton(
+                                          onPressed: () {
+                                            _searchController.clear();
+                                            _filterCategories('');
+                                          },
+                                          icon: Icon(Icons.clear),
+                                          color: AppTheme.primaryColor,
+                                        )
+                                      : null,
+                                  border: InputBorder.none,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      selected: _selectedFilter == filter,
-                      selectedColor: AppTheme.primaryColor,
-                      backgroundColor: Colors.white,
-                      onSelected: (bool selected) {
-                        setState(() {
-                          _selectedFilter = filter;
-                          _filterCategories(
-                            _searchController.text,
-                            categoryFilter: filter,
-                          );
-                        });
-                      },
-                    ),
-                  );
-                },
+                    ],
+                  ),
+                ),
+                collapseMode: CollapseMode.pin,
               ),
             ),
-          ),
-          SliverPadding(
-            padding: EdgeInsets.all(16),
-            sliver: _filteredCategories.isEmpty
-                ? SliverToBoxAdapter(
-                    child: Center(
-                      child: Text(
-                        "No Categories found",
-                        style: TextStyle(color: AppTheme.textSecondaryColor),
+            SliverToBoxAdapter(
+              child: Container(
+                margin: EdgeInsets.all(16),
+                height: 40,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _categoryFilters.length,
+                  itemBuilder: (context, index) {
+                    final filter = _categoryFilters[index];
+                    return Padding(
+                      padding: EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(
+                          filter,
+                          style: TextStyle(
+                            color: _selectedFilter == filter
+                                ? Colors.white
+                                : AppTheme.textPrimaryColor,
+                          ),
+                        ),
+                        selected: _selectedFilter == filter,
+                        selectedColor: AppTheme.primaryColor,
+                        backgroundColor: Colors.white,
+                        onSelected: (bool selected) {
+                          setState(() {
+                            _selectedFilter = filter;
+                            _filterCategories(
+                              _searchController.text,
+                              categoryFilter: filter,
+                            );
+                          });
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.all(16),
+              sliver: _isLoading && _filteredCategories.isEmpty
+                  ? SliverToBoxAdapter(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.only(
+                            top: 50.0,
+                          ), // Đẩy vòng xoay xuống
+                          child: CircularProgressIndicator(
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                      ),
+                    )
+                  : _filteredCategories.isEmpty
+                  ? SliverToBoxAdapter(
+                      child: Center(
+                        child: Text(
+                          "No Categories found",
+                          style: TextStyle(color: AppTheme.textSecondaryColor),
+                        ),
+                      ),
+                    )
+                  : SliverGrid(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => _buildCategoryCard(
+                          _filteredCategories[index],
+                          index,
+                        ),
+                        childCount: _filteredCategories.length,
+                      ),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
+                        childAspectRatio: 0.8,
                       ),
                     ),
-                  )
-                : SliverGrid(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) =>
-                          _buildCategoryCard(_filteredCategories[index], index),
-                      childCount: _filteredCategories.length,
-                    ),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      childAspectRatio: 0.8,
-                    ),
-                  ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
