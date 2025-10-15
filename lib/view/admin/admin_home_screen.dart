@@ -15,6 +15,31 @@ class AdminHomeScreen extends StatefulWidget {
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  bool _isLoading = true; // Bắt đầu với trạng thái loading
+  Map<String, dynamic>? _statsData; // Lưu dữ liệu từ hàm fetch
+
+  Future<void> _refreshData() async {
+    // Không cần setState vì RefreshIndicator sẽ hiển thị loading
+    try {
+      final data = await _fetchStatistics();
+      if (mounted) {
+        setState(() {
+          _statsData = data;
+          _isLoading = false; // Tải xong, dừng loading
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false; // Nếu lỗi dừng loading
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Failed to refresh data: $e")));
+      }
+    }
+  }
+
   Future<Map<String, dynamic>> _fetchStatistics() async {
     final categoriesCount =
         await _firestore // đếm số category trong database
@@ -138,6 +163,319 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
+  Widget _buildContent() {
+    if (_statsData == null) {
+      return Center(child: Text('No data available. Pull down to refresh.'));
+    }
+    final Map<String, dynamic> stats = _statsData!;
+    final List<dynamic> categoryData = stats['categoryData'];
+    final List<QueryDocumentSnapshot> latestQuizzes = stats['latestQuizzes'];
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Welcome User',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimaryColor,
+              ),
+            ),
+
+            SizedBox(height: 8),
+            Text(
+              "Here's your quiz application overview",
+              style: TextStyle(
+                fontSize: 16,
+                color: AppTheme.textSecondaryColor,
+              ),
+            ),
+            SizedBox(height: 24),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    'Total Categories',
+                    stats['totalCategories'].toString(),
+                    Icons.category_rounded,
+                    AppTheme.primaryColor,
+                  ),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: _buildStatCard(
+                    'Total Quizzes',
+                    stats['totalQuizzes'].toString(),
+                    Icons.quiz_rounded,
+                    AppTheme.secondaryColor,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 24),
+            Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.pie_chart_rounded,
+                          color: AppTheme.primaryColor,
+                          size: 24,
+                        ),
+                        SizedBox(width: 12),
+                        Text(
+                          'Category Statistics',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      itemCount: categoryData.length,
+                      itemBuilder: (context, index) {
+                        final category = categoryData[index];
+                        final totalQuizzes = categoryData.fold<int>(
+                          0,
+                          (sum, item) => sum + (item['count'] as int),
+                        );
+
+                        final percentage = totalQuizzes > 0
+                            ? (category['count'] as int) / totalQuizzes * 100
+                            : 0.0;
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: 16),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      category['name'] as String,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: AppTheme.textPrimaryColor,
+                                      ),
+                                    ),
+                                    SizedBox(height: 5),
+                                    Text(
+                                      "${category['count']} ${(category['count'] as int == 1 ? 'quiz' : 'quizzes')}",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: AppTheme.textSecondaryColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  '${percentage.toStringAsFixed(1)}%',
+                                  style: TextStyle(
+                                    color: AppTheme.primaryColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: 24),
+            Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.history_rounded,
+                          color: AppTheme.primaryColor,
+                          size: 24,
+                        ),
+                        SizedBox(width: 12),
+                        Text(
+                          'Recent Activity',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      itemCount: latestQuizzes.length,
+                      itemBuilder: (context, index) {
+                        final quiz =
+                            latestQuizzes[index].data() as Map<String, dynamic>;
+                        final String title =
+                            quiz['title'] ??
+                            'No Title'; // Nếu title là null, dùng 'No Title'
+                        final Timestamp? timestamp =
+                            quiz['createdAt'] as Timestamp?; // Lấy ra an toàn
+                        final DateTime createdAt =
+                            timestamp?.toDate() ?? DateTime.now();
+
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: 16),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.quiz_rounded,
+                                  color: AppTheme.primaryColor,
+                                  size: 20,
+                                ),
+                              ),
+                              SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.textPrimaryColor,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'Created on: ${_formatDateTime(createdAt)}',
+                                      style: TextStyle(
+                                        color: AppTheme.textSecondaryColor,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: 24),
+            Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.speed_rounded,
+                          color: AppTheme.primaryColor,
+                          size: 24,
+                        ),
+                        SizedBox(width: 12),
+                        Text(
+                          'Quiz Actions',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20),
+                    GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 0.8,
+                      crossAxisSpacing: 16,
+                      children: [
+                        _buildDashoboardCard(
+                          context,
+                          'Quizzes',
+                          Icons.quiz_rounded,
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ManageQuizesScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildDashoboardCard(
+                          context,
+                          'Categories',
+                          Icons.category_rounded,
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ManageCategoriesScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshData(); // Gọi hàm tải dữ liệu khi màn hình được khởi tạo
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -149,328 +487,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ),
         elevation: 0,
       ),
-      body: FutureBuilder(
-        future: _fetchStatistics(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
+      body: _isLoading
+          ? Center(
               child: CircularProgressIndicator(color: AppTheme.primaryColor),
-            );
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          final Map<String, dynamic> stats = snapshot.data!;
-          final List<dynamic> categoryData = stats['categoryData'];
-          final List<QueryDocumentSnapshot> latestQuizzes =
-              stats['latestQuizzes'];
-
-          return SafeArea(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Welcome User',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimaryColor,
-                    ),
-                  ),
-
-                  SizedBox(height: 8),
-                  Text(
-                    "Here's your quiz application overview",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppTheme.textSecondaryColor,
-                    ),
-                  ),
-                  SizedBox(height: 24),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          'Total Categories',
-                          stats['totalCategories'].toString(),
-                          Icons.category_rounded,
-                          AppTheme.primaryColor,
-                        ),
-                      ),
-                      SizedBox(width: 16),
-                      Expanded(
-                        child: _buildStatCard(
-                          'Total Quizzes',
-                          stats['totalQuizzes'].toString(),
-                          Icons.quiz_rounded,
-                          AppTheme.secondaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 24),
-                  Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.pie_chart_rounded,
-                                color: AppTheme.primaryColor,
-                                size: 24,
-                              ),
-                              SizedBox(width: 12),
-                              Text(
-                                'Category Statistics',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.textPrimaryColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 20),
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            itemCount: categoryData.length,
-                            itemBuilder: (context, index) {
-                              final category = categoryData[index];
-                              final totalQuizzes = categoryData.fold<int>(
-                                0,
-                                (sum, item) => sum + (item['count'] as int),
-                              );
-
-                              final percentage = totalQuizzes > 0
-                                  ? (category['count'] as int) /
-                                        totalQuizzes *
-                                        100
-                                  : 0.0;
-                              return Padding(
-                                padding: EdgeInsets.only(bottom: 16),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            category['name'] as String,
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w500,
-                                              color: AppTheme.textPrimaryColor,
-                                            ),
-                                          ),
-                                          SizedBox(height: 5),
-                                          Text(
-                                            "${category['count']} ${(category['count'] as int == 1 ? 'quiz' : 'quizzes')}",
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color:
-                                                  AppTheme.textSecondaryColor,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.primaryColor
-                                            .withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Text(
-                                        '${percentage.toStringAsFixed(1)}%',
-                                        style: TextStyle(
-                                          color: AppTheme.primaryColor,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 24),
-                  Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.history_rounded,
-                                color: AppTheme.primaryColor,
-                                size: 24,
-                              ),
-                              SizedBox(width: 12),
-                              Text(
-                                'Recent Activity',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.textPrimaryColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 20),
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            itemCount: latestQuizzes.length,
-                            itemBuilder: (context, index) {
-                              final quiz =
-                                  latestQuizzes[index].data()
-                                      as Map<String, dynamic>;
-                              final String title = quiz['title'] ?? 'No Title'; // Nếu title là null, dùng 'No Title'
-                              final Timestamp? timestamp = quiz['createdAt'] as Timestamp?; // Lấy ra an toàn
-                              final DateTime createdAt = timestamp?.toDate() ?? DateTime.now();
-
-                              return Padding(
-                                padding: EdgeInsets.only(bottom: 16),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.primaryColor
-                                            .withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Icon(
-                                        Icons.quiz_rounded,
-                                        color: AppTheme.primaryColor,
-                                        size: 20,
-                                      ),
-                                    ),
-                                    SizedBox(width: 16),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            title,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: AppTheme.textPrimaryColor,
-                                            ),
-                                          ),
-                                          SizedBox(height: 4),
-                                          Text(
-                                            'Created on: ${_formatDateTime(createdAt)}',
-                                            style: TextStyle(
-                                              color:
-                                                  AppTheme.textSecondaryColor,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 24),
-                  Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.speed_rounded,
-                                color: AppTheme.primaryColor,
-                                size: 24,
-                              ),
-                              SizedBox(width: 12),
-                              Text(
-                                'Quiz Actions',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.textPrimaryColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 20),
-                          GridView.count(
-                            crossAxisCount: 2,
-                            shrinkWrap: true,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 0.8,
-                            crossAxisSpacing: 16,
-                            children: [
-                              _buildDashoboardCard(
-                                context,
-                                'Quizzes',
-                                Icons.quiz_rounded,
-                                () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          ManageQuizesScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
-                              _buildDashoboardCard(
-                                context,
-                                'Categories',
-                                Icons.category_rounded,
-                                () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          ManageCategoriesScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _refreshData, // Gán hàm refresh vào đây
+              color: AppTheme.primaryColor,
+              child:
+                  _buildContent(), // Xây dựng nội dung chính từ dữ liệu đã có
             ),
-          );
-        },
-      ),
     );
   }
 }
