@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:quiz_app/model/category.dart';
@@ -135,6 +136,54 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 6.0, top: 11.0),
+                  child: PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      if (value == 'logout') {
+                        await FirebaseAuth.instance.signOut();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Logged out successfully')),
+                          );
+                        }
+                      }
+                    },
+                    icon: const CircleAvatar(
+                      radius: 18,
+                      backgroundColor: Colors.white,
+                      child: Icon(
+                        Icons.person,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem<String>(
+                        value: 'profile',
+                        child: Row(
+                          children: [
+                            Icon(Icons.account_circle, color: AppTheme.primaryColor),
+                            SizedBox(width: 10),
+                            Text('Profile'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'logout',
+                        child: Row(
+                          children: [
+                            Icon(Icons.logout, color: Colors.redAccent),
+                            SizedBox(width: 10),
+                            Text('Logout'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               flexibleSpace: FlexibleSpaceBar(
                 background: SafeArea(
                   child: Column(

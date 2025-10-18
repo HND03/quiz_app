@@ -93,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 20),
               Container(
-                height: 550,
+                height: 570,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.only(
@@ -107,10 +107,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     key: _formKey,
                     child: Column(
                       children: <Widget>[
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 10),
                         Container(
                           height: 210,
-                          padding: const EdgeInsets.all(20),
+                          padding: const EdgeInsets.all(15),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(10),

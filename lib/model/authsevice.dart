@@ -6,14 +6,23 @@ class AuthService {
   // SignUp
   Future<User?> signUp(String email, String password) async {
     try {
-      UserCredential userCredential =
-      await _auth.createUserWithEmailAndPassword(
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
-      throw Exception(e.message);
+      switch (e.code) {
+        case 'email-already-in-use':
+          throw Exception("This Email has been registered.");
+        case 'invalid-email':
+          throw Exception("Invalid Email Address.");
+        case 'weak-password':
+          throw Exception("Password is too weak, Choose a stronger password.");
+        default:
+          throw Exception("Sign Up Failed. Please Try Again.");
+      }
     }
   }
 
@@ -26,7 +35,16 @@ class AuthService {
       );
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
-      throw Exception(e.message);
+      switch (e.code) {
+        case 'invalid-credential':
+          throw Exception("Password or Email is Incorrect.");
+        case 'invalid-email':
+          throw Exception("Invalid Email Address.");
+        case 'user-disabled':
+          throw Exception("This account has been disabled.");
+        default:
+          throw Exception("Login Failed. Please Try Again.");
+      }
     }
   }
 
