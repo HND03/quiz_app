@@ -1,10 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:quiz_app/theme/theme.dart';
 import 'package:quiz_app/view/user/signup_screen.dart';
-
 import '../../model/authsevice.dart';
-import '../admin/admin_home_screen.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -23,34 +20,36 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   Future<void> _login() async {
-    final form = _formKey.currentState;
-    if (form == null || !form.validate()) return;
-
-    // 2. Bắt đầu loading
+    if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
-    User? user; // Tạo một biến để giữ người dùng
-
-    // 3. Thực hiện đăng nhập và xử lý lỗi
     try {
-      user = await _authService.signIn(
+      final user = await _authService.signIn(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
+      if (user != null && mounted) {
+        // Hiển thị thông báo thành công
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Login successful!")),
+        );
+        await Future.delayed(const Duration(milliseconds: 300));
+        // Điều hướng sang HomeScreen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message ?? "Login failed.")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? "Login failed.")),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
       );
     } finally {
-      // 4. Luôn dừng loading dù thành công hay thất bại
-      if (mounted) {
-        // Kiểm tra xem widget còn tồn tại không
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -85,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     SizedBox(height: 10),
                     Text(
-                      "Welcome Back",
+                      "Welcome My Learner",
                       style: TextStyle(color: Colors.white, fontSize: 18),
                     ),
                   ],
@@ -109,7 +108,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: <Widget>[
                         const SizedBox(height: 10),
                         Container(
-                          height: 210,
                           padding: const EdgeInsets.all(15),
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -130,7 +128,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 decoration: const InputDecoration(
                                   labelText: 'Email',
                                   prefixIcon: Icon(Icons.email_outlined),
-                                  border: OutlineInputBorder(),
                                 ),
                                 validator: (value) => value!.isEmpty
                                     ? 'Please enter your email'
@@ -143,7 +140,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 decoration: const InputDecoration(
                                   labelText: 'Password',
                                   prefixIcon: Icon(Icons.lock_outline),
-                                  border: OutlineInputBorder(),
                                 ),
                                 validator: (value) => value!.isEmpty
                                     ? 'Please enter your password'

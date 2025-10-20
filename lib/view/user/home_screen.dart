@@ -6,6 +6,7 @@ import 'package:quiz_app/model/category.dart';
 import 'package:quiz_app/theme/theme.dart';
 import '../admin/admin_home_screen.dart';
 import 'category_screen.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -147,6 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Logged out successfully')),
                           );
+                          Navigator.pushReplacementNamed(context, '/login');
                         }
                       }
                     },

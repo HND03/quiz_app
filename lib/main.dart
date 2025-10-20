@@ -9,7 +9,7 @@ import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
@@ -34,18 +34,18 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Khi đang chờ Firebase xác thực
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
-        // Nếu chưa đăng nhập thì về màn hình Login
-        if (!snapshot.hasData) {
+        // 2️ Đã đăng nhập
+        if (snapshot.hasData) {
+          // Đã đăng nhập
+          return const HomeScreen();
+        } else {
+          // Chưa đăng nhập
           return const LoginScreen();
         }
-        return const HomeScreen();
       },
     );
   }
