@@ -1,12 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:quiz_app/model/category.dart';
 import 'package:quiz_app/theme/theme.dart';
+import 'package:quiz_app/view/user/profile_screen.dart';
 import '../admin/admin_home_screen.dart';
 import 'category_screen.dart';
-import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -139,59 +138,23 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               actions: [
                 Padding(
-                  padding: const EdgeInsets.only(right: 6.0, top: 11.0),
-                  child: PopupMenuButton<String>(
-                    onSelected: (value) async {
-                      if (value == 'logout') {
-                        try {
-                          await FirebaseAuth.instance.signOut();
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Logged out successfully'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Logout failed: $e')),
-                            );
-                          }
-                        }
-                      }
+                  padding: const EdgeInsets.only(right: 20, top: 4),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                      );
                     },
-                    icon: const CircleAvatar(
-                      radius: 18,
+                    child: const CircleAvatar(
+                      radius: 17,
                       backgroundColor: Colors.white,
                       child: Icon(
                         Icons.person,
                         color: AppTheme.primaryColor,
+                        size: 26,
                       ),
                     ),
-                    itemBuilder: (context) => [
-                      const PopupMenuItem<String>(
-                        value: 'profile',
-                        child: Row(
-                          children: [
-                            Icon(Icons.account_circle, color: AppTheme.primaryColor),
-                            SizedBox(width: 10),
-                            Text('Profile'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem<String>(
-                        value: 'logout',
-                        child: Row(
-                          children: [
-                            Icon(Icons.logout, color: Colors.redAccent),
-                            SizedBox(width: 10),
-                            Text('Logout'),
-                          ],
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ],
