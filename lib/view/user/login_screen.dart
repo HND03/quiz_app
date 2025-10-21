@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:quiz_app/view/user/signup_screen.dart';
+import '../../main.dart';
 import '../../model/authsevice.dart';
 import 'home_screen.dart';
 
@@ -28,16 +29,21 @@ class _LoginScreenState extends State<LoginScreen> {
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
+
       if (user != null && mounted) {
-        // Hiển thị thông báo thành công
+        // Hiển thị thông báo đăng nhập thành công
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Login successful!")),
         );
+
+        // Thay vì pushReplacement sang HomeScreen trực tiếp,
+        // ta chỉ pop về AuthWrapper để nó tự điều hướng đúng.
         await Future.delayed(const Duration(milliseconds: 300));
-        // Điều hướng sang HomeScreen
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+
+        // Xóa toàn bộ các route cũ và quay về AuthWrapper
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const AuthWrapper()),
+              (route) => false,
         );
       }
     } on FirebaseAuthException catch (e) {

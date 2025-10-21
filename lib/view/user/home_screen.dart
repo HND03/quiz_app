@@ -143,12 +143,22 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: PopupMenuButton<String>(
                     onSelected: (value) async {
                       if (value == 'logout') {
-                        await FirebaseAuth.instance.signOut();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Logged out successfully')),
-                          );
-                          Navigator.pushReplacementNamed(context, '/login');
+                        try {
+                          await FirebaseAuth.instance.signOut();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Logged out successfully'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Logout failed: $e')),
+                            );
+                          }
                         }
                       }
                     },
