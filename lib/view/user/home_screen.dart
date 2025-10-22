@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:quiz_app/model/category.dart';
@@ -18,10 +19,11 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       GlobalKey<RefreshIndicatorState>();
   final TextEditingController _searchController = TextEditingController();
+
+  String? _photoUrl;
   bool _isLoading = false;
   List<Category> _allCategories = [];
   List<Category> _filteredCategories = [];
-
   List<String> _categoryFilters = ['All'];
   String _selectedFilter = 'All';
 
@@ -30,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // TODO: implement initState
     super.initState();
     _fetchCategories();
+    _loadUserPhoto();
   }
 
   Future<void> _fetchCategories() async {
@@ -68,6 +71,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadUserPhoto() async {
+    await FirebaseAuth.instance.currentUser?.reload();
+    setState(() {
+      _photoUrl = FirebaseAuth.instance.currentUser?.photoURL;
+    });
+  }
+
   void _filterCategories(String query, {String? categoryFilter}) {
     setState(() {
       _filteredCategories = _allCategories.where((category) {
@@ -84,6 +94,16 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reloadUser(); // mỗi lần màn hình được hiển thị lại, reload user
+  }
+
+  Future<void> _reloadUser() async {
+    await FirebaseAuth.instance.currentUser?.reload();
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
         backgroundColor: AppTheme.primaryColor, // Sử dụng màu chủ đạo
-        child: Icon(
+        child: const Icon(
           Icons.add, // Hoặc bạn có thể dùng Icons.add hoặc Icons.settings
           color: Colors.white,
         ),
@@ -141,19 +161,34 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.only(right: 20, top: 4),
                   child: GestureDetector(
                     onTap: () {
+                      // ✅ Nhận giá trị avatar mới khi quay lại
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                      );
+                        MaterialPageRoute(
+                            builder: (_) => const ProfileScreen()),
+                      ).then((newPhotoUrl) async {
+                        if (newPhotoUrl != null && newPhotoUrl is String) {
+                          setState(() {
+                            _photoUrl = newPhotoUrl;
+                          });
+                        } else {
+                          await _loadUserPhoto();
+                        }
+                      });
                     },
-                    child: const CircleAvatar(
+                    child: CircleAvatar(
                       radius: 17,
                       backgroundColor: Colors.white,
-                      child: Icon(
-                        Icons.person,
-                        color: AppTheme.primaryColor,
-                        size: 26,
-                      ),
+                      backgroundImage: _photoUrl != null
+                          ? NetworkImage(
+                        '$_photoUrl?v=${DateTime.now().millisecondsSinceEpoch}',
+                      )
+                          : const AssetImage("assets/images/default_avatar.png")
+                      as ImageProvider,
+                      child: _photoUrl == null
+                          ? const Icon(Icons.person,
+                          color: AppTheme.primaryColor, size: 26)
+                          : null,
                     ),
                   ),
                 ),

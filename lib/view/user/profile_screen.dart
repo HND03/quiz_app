@@ -1,5 +1,10 @@
+import 'dart:io';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:quiz_app/theme/theme.dart';
 
 import 'login_screen.dart';
@@ -18,6 +23,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _isEditingName = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+
+  File? _avatarFile;
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -38,6 +46,108 @@ class _ProfileScreenState extends State<ProfileScreen>
     _nameController.dispose();
     _animationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+
+    final pickedFile = await showModalBottomSheet<XFile?>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Select From Library'),
+                onTap: () async {
+                  final file = await picker.pickImage(
+                    source: ImageSource.gallery,
+                    imageQuality: 80,
+                  );
+                  Navigator.pop(context, file);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Camera'),
+                onTap: () async {
+                  final file = await picker.pickImage(
+                    source: ImageSource.camera,
+                    imageQuality: 80,
+                  );
+                  Navigator.pop(context, file);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (pickedFile == null) return;
+
+    final file = File(pickedFile.path);
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final cloudName = dotenv.env['CLOUDINARY_CLOUD_NAME'];
+    final uploadPreset = dotenv.env['CLOUDINARY_UPLOAD_PRESET'];
+
+    if (cloudName == null || uploadPreset == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Missing Cloudinary config in .env")),
+      );
+      return;
+    }
+
+    try {
+      setState(() => _isUploading = true);
+
+      final uri = Uri.parse(
+        "https://api.cloudinary.com/v1_1/$cloudName/image/upload",
+      );
+
+      final request = http.MultipartRequest("POST", uri)
+        ..fields['upload_preset'] = uploadPreset
+        ..files.add(await http.MultipartFile.fromPath('file', file.path));
+
+      final response = await request.send();
+      final resBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(resBody);
+        final imageUrl = data["secure_url"];
+
+        // ✅ Cập nhật avatar trong Firebase Auth
+        await user.updatePhotoURL(imageUrl);
+        await FirebaseAuth.instance.currentUser?.reload();
+
+        if (mounted) {
+          setState(() {
+            _avatarFile = file;
+            _isUploading = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Avatar updated successfully!")),
+          );
+        }
+      } else {
+        throw Exception("Upload failed: ${response.statusCode}");
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Failed to upload avatar: $e")));
+      }
+    }
   }
 
   Future<void> _updateDisplayName() async {
@@ -123,7 +233,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (route) => false,
+            (route) => false,
           );
         }
       } on FirebaseAuthException catch (e) {
@@ -131,9 +241,9 @@ class _ProfileScreenState extends State<ProfileScreen>
           SnackBar(content: Text("Failed to delete account: ${e.message}")),
         );
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Delete failed: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Delete failed: $e")));
       }
     }
   }
@@ -166,8 +276,9 @@ class _ProfileScreenState extends State<ProfileScreen>
         elevation: 0,
         centerTitle: true,
         title: const Text("Profile", style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(15)),
         ),
       ),
       body: SingleChildScrollView(
@@ -177,14 +288,52 @@ class _ProfileScreenState extends State<ProfileScreen>
             const SizedBox(height: 30),
 
             // Avatar
-            CircleAvatar(
-              radius: 45,
-              backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-              child: const Icon(
-                Icons.person,
-                size: 50,
-                color: AppTheme.primaryColor,
-              ),
+            Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                CircleAvatar(
+                  radius: 45,
+                  backgroundImage: _avatarFile != null
+                      ? FileImage(_avatarFile!)
+                      : (user?.photoURL != null
+                                ? NetworkImage(
+                                    "${user!.photoURL!}?v=${DateTime.now().millisecondsSinceEpoch}",
+                                  )
+                                : null)
+                            as ImageProvider<Object>?,
+                  backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                  child: (_avatarFile == null && user?.photoURL == null)
+                      ? const Icon(
+                          Icons.person,
+                          size: 50,
+                          color: AppTheme.primaryColor,
+                        )
+                      : null,
+                ),
+                if (_isUploading)
+                  const Positioned.fill(
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: InkWell(
+                    onTap: _pickImage,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: AppTheme.primaryColor,
+                        shape: BoxShape.circle,
+                      ),
+                      padding: const EdgeInsets.all(6),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 15),
 
@@ -283,14 +432,18 @@ class _ProfileScreenState extends State<ProfileScreen>
 
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Logged out successfully!")),
+                            const SnackBar(
+                              content: Text("Logged out successfully!"),
+                            ),
                           );
 
                           // Quay về trang Login bằng cách làm mới AuthWrapper
                           Navigator.pushAndRemoveUntil(
                             context,
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
-                                (route) => false,
+                            MaterialPageRoute(
+                              builder: (_) => const LoginScreen(),
+                            ),
+                            (route) => false,
                           );
                         }
                       } catch (e) {
