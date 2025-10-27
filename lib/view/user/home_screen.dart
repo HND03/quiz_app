@@ -9,7 +9,8 @@ import '../admin/admin_home_screen.dart';
 import 'category_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final Function(ThemeMode)? onThemeChanged;
+  const HomeScreen({super.key, required this.onThemeChanged});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -44,7 +45,6 @@ class _HomeScreenState extends State<HomeScreen> {
           .collection('categories')
           .orderBy('createdAt', descending: true)
           .get();
-      // Kiểm tra xem widget có còn trên cây widget không trước khi gọi setState
       if (mounted) {
         setState(() {
           _allCategories = snapshot.docs
@@ -54,9 +54,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ['All'] +
               _allCategories.map((category) => category.name).toSet().toList();
           _filteredCategories = _allCategories;
-          // THÊM DÒNG NÀY ĐỂ ĐƯA BỘ LỌC VỀ BAN ĐẦU
+          // ADD THIS LINE TO RESET THE FILTER TO INITIAL
           _selectedFilter = 'All';
-          // Cũng nên reset cả ô tìm kiếm
+          // reset the entire search box
           _searchController.clear();
           _isLoading = false;
         });
@@ -65,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         setState(() {
           _isLoading =
-              false; // Tải xong (thành công hoặc thất bại), đặt lại thành false
+              false; // Download complete (success or failure), reset to false
         });
       }
     }
@@ -96,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _reloadUser(); // mỗi lần màn hình được hiển thị lại, reload user
+    _reloadUser(); //reload user
   }
 
   Future<void> _reloadUser() async {
@@ -106,22 +106,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor =
+    isDark ? AppTheme.darkBackgroundColor : AppTheme.backgroundColor;
+    final textPrimary =
+    isDark ? AppTheme.darkTextPrimaryColor : AppTheme.textPrimaryColor;
+    final textSecondary =
+    isDark ? AppTheme.darkTextSecondaryColor : AppTheme.textSecondaryColor;
+    final cardColor = isDark ? AppTheme.darkCardColor : AppTheme.cardColor;
+
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: bgColor,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Điều hướng đến màn hình AdminHomeScreen
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => AdminHomeScreen()),
           );
         },
-        backgroundColor: AppTheme.primaryColor, // Sử dụng màu chủ đạo
-        child: const Icon(
-          Icons.add, // Hoặc bạn có thể dùng Icons.add hoặc Icons.settings
-          color: Colors.white,
-        ),
-        tooltip: 'Quiz Manager', // Gợi ý nhỏ khi người dùng nhấn giữ nút
+        backgroundColor: AppTheme.primaryColor,
+        child: const Icon(Icons.add, color: Colors.white),
+        tooltip: 'Quiz Manager',
       ),
       body: RefreshIndicator(
         key: _refreshIndicatorKey,
@@ -144,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               title: GestureDetector(
                 onTap: () {
-                  // Gọi lại hàm fetch để làm mới dữ liệu
+                  // Call the fetch function again to refresh the data
                   _refreshIndicatorKey.currentState?.show();
                 },
                 child: Text(
@@ -161,11 +166,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.only(right: 20, top: 4),
                   child: GestureDetector(
                     onTap: () {
-                      // ✅ Nhận giá trị avatar mới khi quay lại
+                      // ✅ Get new avatar value when returning
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const ProfileScreen()),
+                          builder: (_) => ProfileScreen(
+                            onThemeChanged: widget.onThemeChanged ?? (mode) {},
+                          ),
+                        ),
                       ).then((newPhotoUrl) async {
                         if (newPhotoUrl != null && newPhotoUrl is String) {
                           setState(() {
@@ -181,13 +189,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       backgroundColor: Colors.white,
                       backgroundImage: _photoUrl != null
                           ? NetworkImage(
-                        '$_photoUrl?v=${DateTime.now().millisecondsSinceEpoch}',
-                      )
+                              '$_photoUrl?v=${DateTime.now().millisecondsSinceEpoch}',
+                            )
                           : const AssetImage("assets/images/default_avatar.png")
-                      as ImageProvider,
+                                as ImageProvider,
                       child: _photoUrl == null
-                          ? const Icon(Icons.person,
-                          color: AppTheme.primaryColor, size: 26)
+                          ? const Icon(
+                              Icons.person,
+                              color: AppTheme.primaryColor,
+                              size: 26,
+                            )
                           : null,
                     ),
                   ),
@@ -224,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             SizedBox(height: 16),
                             Container(
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(16),
                                 color: Colors.white,
                                 boxShadow: [
                                   BoxShadow(
@@ -239,22 +250,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onChanged: (value) => _filterCategories(value),
                                 decoration: InputDecoration(
                                   hintText: "Search categories...",
-                                  prefixIcon: Icon(
-                                    Icons.search,
-                                    color: AppTheme.primaryColor,
-                                  ),
+                                  hintStyle: TextStyle(
+                                      color: isDark
+                                          ? Colors.grey[400]
+                                          : AppTheme.textSecondaryColor),
+                                  prefixIcon: Icon(Icons.search,
+                                      color: AppTheme.primaryColor),
                                   suffixIcon: _searchController.text.isNotEmpty
                                       ? IconButton(
                                           onPressed: () {
                                             _searchController.clear();
                                             _filterCategories('');
                                           },
-                                          icon: Icon(Icons.clear),
-                                          color: AppTheme.primaryColor,
+                                    icon: const Icon(Icons.clear),
+                                    color: AppTheme.primaryColor,
                                         )
                                       : null,
                                   border: InputBorder.none,
                                 ),
+                                style: TextStyle(color: textPrimary),
                               ),
                             ),
                           ],
@@ -283,12 +297,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(
                             color: _selectedFilter == filter
                                 ? Colors.white
-                                : AppTheme.textPrimaryColor,
+                                : textPrimary,
                           ),
                         ),
                         selected: _selectedFilter == filter,
                         selectedColor: AppTheme.primaryColor,
-                        backgroundColor: Colors.white,
+                        backgroundColor: cardColor,
                         onSelected: (bool selected) {
                           setState(() {
                             _selectedFilter = filter;
@@ -305,14 +319,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             SliverPadding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               sliver: _isLoading && _filteredCategories.isEmpty
-                  ? SliverToBoxAdapter(
+                  ? const SliverToBoxAdapter(
                       child: Center(
                         child: Padding(
-                          padding: const EdgeInsets.only(
-                            top: 50.0,
-                          ), // Đẩy vòng xoay xuống
+                          padding: const EdgeInsets.only(top: 50.0),
                           child: CircularProgressIndicator(
                             color: AppTheme.primaryColor,
                           ),
@@ -324,19 +336,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Center(
                         child: Text(
                           "No Categories found",
-                          style: TextStyle(color: AppTheme.textSecondaryColor),
+                          style: TextStyle(color: textSecondary),
                         ),
                       ),
                     )
                   : SliverGrid(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) => _buildCategoryCard(
-                          _filteredCategories[index],
-                          index,
-                        ),
-                        childCount: _filteredCategories.length,
-                      ),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                delegate: SliverChildBuilderDelegate(
+                      (context, index) => _buildCategoryCard(
+                    _filteredCategories[index],
+                    index,
+                    isDark,
+                    textPrimary,
+                  ),
+                  childCount: _filteredCategories.length,
+                ),
+                gridDelegate: const  SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         mainAxisSpacing: 16,
                         crossAxisSpacing: 16,
@@ -350,67 +364,70 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCategoryCard(Category category, int index) {
+  Widget _buildCategoryCard(
+      Category category, int index, bool isDark, Color textPrimary) {
+    final cardColor = isDark ? AppTheme.darkCardColor : AppTheme.cardColor;
     return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CategoryScreen(category: category),
-                ),
-              );
-            },
-            child: Container(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.quiz,
-                      size: 48,
-                      color: AppTheme.primaryColor,
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    category.name,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimaryColor,
-                    ),
-                    maxLines: 1,
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    category.description,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppTheme.textPrimaryColor,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+      elevation: 0,
+      color: cardColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CategoryScreen(category: category),
             ),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.quiz,
+                  size: 48,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                category.name,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: textPrimary,
+                ),
+                maxLines: 1,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                category.description,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: textPrimary.withOpacity(0.8),
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
-        )
+        ),
+      ),
+    )
         .animate(delay: Duration(milliseconds: 100 * index))
-        .slideY(begin: 0.5, end: 0, duration: Duration(milliseconds: 300))
+        .slideY(begin: 0.5, end: 0, duration: const Duration(milliseconds: 300))
         .fadeIn();
   }
 }

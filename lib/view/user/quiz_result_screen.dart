@@ -9,6 +9,7 @@ class QuizResultScreen extends StatefulWidget {
   final int totalQuestions;
   final int correctAnswers;
   final Map<int, int?> selectedAnswers;
+
   const QuizResultScreen({
     super.key,
     required this.quiz,
@@ -28,23 +29,25 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     IconData icon,
     Color color,
   ) {
+    final theme = Theme.of(context);
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
+          if (theme.brightness == Brightness.light)
+            BoxShadow(
+              color: color.withOpacity(0.1),
+              blurRadius: 10,
+              spreadRadius: 2,
+            ),
         ],
       ),
       child: Column(
         children: [
           Icon(icon, color: color, size: 32),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             value,
             style: TextStyle(
@@ -55,30 +58,30 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           ),
           Text(
             title,
-            style: TextStyle(fontSize: 20, color: AppTheme.textSecondaryColor),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppTheme.textSecondaryColor,
+            ),
           ),
         ],
       ),
-    ).animate().scale(
-      duration: Duration(milliseconds: 400),
-      delay: Duration(milliseconds: 300),
-    );
+    ).animate().scale(duration: const Duration(milliseconds: 400));
   }
 
-  Widget _builAnswerRow(String label, String answer, Color answerColor) {
+  Widget _buildAnswerRow(String label, String answer, Color answerColor) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w500,
             color: AppTheme.textSecondaryColor,
           ),
         ),
-        SizedBox(height: 4),
+        const SizedBox(height: 4),
         Container(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: answerColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
@@ -110,48 +113,52 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     if (score >= 0.9) return "Outstanding!";
     if (score >= 0.8) return "Great Job!";
     if (score >= 0.6) return "Good Effort!";
-    if (score >= 0.4) return "Keep Praticing!";
+    if (score >= 0.4) return "Keep Practicing!";
     return "Try Again!";
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final score = widget.correctAnswers / widget.totalQuestions;
     final scorePercentage = (score * 100).round();
+
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SingleChildScrollView(
         child: Column(
           children: [
+            // 🟦 Header với gradient theo theme
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
                   colors: [
                     AppTheme.primaryColor,
                     AppTheme.primaryColor.withOpacity(0.8),
                   ],
                 ),
-                borderRadius: BorderRadius.only(
+                borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(40),
                   bottomRight: Radius.circular(40),
                 ),
               ),
               child: Column(
                 children: [
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
                   Padding(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         IconButton(
-                          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+                          icon: const Icon(
+                            Icons.arrow_back_ios,
+                            color: Colors.white,
+                          ),
                           onPressed: () => Navigator.pop(context),
                         ),
-                        Text(
+                        const Text(
                           'Quiz Result',
                           style: TextStyle(
                             fontSize: 24,
@@ -159,69 +166,59 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                             color: Colors.white,
                           ),
                         ),
-                        SizedBox(width: 40),
+                        const SizedBox(width: 40),
                       ],
                     ),
                   ),
-                  SizedBox(height: 20),
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: CircularPercentIndicator(
-                          radius: 100,
-                          lineWidth: 15,
-                          animation: true,
-                          animationDuration: 1500,
-                          percent: score,
-                          center: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '${scorePercentage}%',
-                                style: TextStyle(
-                                  fontSize: 40,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              Text(
-                                '${((widget.correctAnswers / widget.totalQuestions) * 100).toInt()}',
-                                style: TextStyle(
-                                  fontSize: 25,
-                                  color: Colors.white.withOpacity(0.9),
-                                ),
-                              ),
-                            ],
+                  const SizedBox(height: 20),
+                  // 🌀 Percent Indicator
+                  CircularPercentIndicator(
+                    radius: 100,
+                    lineWidth: 15,
+                    animation: true,
+                    percent: score,
+                    center: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "$scorePercentage%",
+                          style: const TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
-                          circularStrokeCap: CircularStrokeCap.round,
-                          progressColor: Colors.white,
-                          backgroundColor: Colors.white.withOpacity(0.2),
                         ),
-                      ),
-                    ],
-                  ).animate().scale(
-                    delay: Duration(milliseconds: 800),
-                    curve: Curves.elasticOut,
-                  ),
-                  SizedBox(height: 20),
+                        Text(
+                          "${widget.correctAnswers}/${widget.totalQuestions}",
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                        ),
+                      ],
+                    ),
+                    circularStrokeCap: CircularStrokeCap.round,
+                    progressColor: Colors.white,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                  ).animate().scale(curve: Curves.elasticOut),
+                  const SizedBox(height: 20),
+                  // 🌟 Performance Message
                   Container(
-                    margin: EdgeInsets.only(bottom: 16),
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: theme.cardColor,
                       borderRadius: BorderRadius.circular(30),
                       boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: Offset(0, 4),
-                        ),
+                        if (theme.brightness == Brightness.light)
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
                       ],
                     ),
                     child: Row(
@@ -232,7 +229,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                           color: _getScoreColor(score),
                           size: 28,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           _getPerformanceMessage(score),
                           style: TextStyle(
@@ -243,16 +240,14 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                         ),
                       ],
                     ),
-                  ).animate().slideY(
-                    begin: 0.1,
-                    duration: Duration(milliseconds: 500),
-                    delay: Duration(milliseconds: 200),
                   ),
                 ],
               ),
             ),
+
+            // 🟢 Correct/Incorrect Summary
             Padding(
-              padding: EdgeInsets.all(14),
+              padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
                   Expanded(
@@ -263,10 +258,10 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                       Colors.green,
                     ),
                   ),
-                  SizedBox(width: 16),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: _buildStatCard(
-                      "InCorrect",
+                      "Incorrect",
                       (widget.totalQuestions - widget.correctAnswers)
                           .toString(),
                       Icons.cancel,
@@ -276,138 +271,123 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                 ],
               ),
             ),
+
+            // 🧩 Detailed Analysis Section
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
                   Row(
                     children: [
                       Icon(Icons.analytics, color: AppTheme.primaryColor),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Text(
                         "Detailed Analysis",
-                        style: TextStyle(
-                          fontSize: 20,
+                        style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimaryColor,
+                          color: theme.textTheme.bodyLarge?.color,
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   ...widget.quiz.questions.asMap().entries.map((entry) {
                     final index = entry.key;
                     final question = entry.value;
                     final selectedAnswer = widget.selectedAnswers[index];
                     final isCorrect =
-                        selectedAnswer != null &&
                         selectedAnswer == question.correctOptionIndex;
 
                     return Container(
-                      margin: EdgeInsets.only(bottom: 16),
+                      margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: theme.cardColor,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 2,
-                            blurRadius: 8,
-                            offset: Offset(0, 2),
+                          if (theme.brightness == Brightness.light)
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                        ],
+                      ),
+                      child: ExpansionTile(
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isCorrect
+                                ? Colors.green.withOpacity(0.1)
+                                : Colors.redAccent.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isCorrect ? Icons.check : Icons.close,
+                            color: isCorrect ? Colors.green : Colors.redAccent,
+                          ),
+                        ),
+                        title: Text(
+                          "Question ${index + 1}",
+                          style: TextStyle(
+                            color: theme.textTheme.bodyLarge?.color,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: Text(
+                          question.text,
+                          style: TextStyle(
+                            color: theme.textTheme.bodyMedium?.color
+                                ?.withOpacity(0.7),
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  question.text,
+                                  style: TextStyle(
+                                    color: theme.textTheme.bodyLarge?.color,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                _buildAnswerRow(
+                                  "Your Answer: ",
+                                  selectedAnswer != null
+                                      ? question.options[selectedAnswer]
+                                      : 'Not Answered',
+                                  isCorrect ? Colors.green : Colors.redAccent,
+                                ),
+                                const SizedBox(height: 12),
+                                _buildAnswerRow(
+                                  "Correct Answer: ",
+                                  question.options[question.correctOptionIndex],
+                                  Colors.green,
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
-                      child: Theme(
-                        data: Theme.of(
-                          context,
-                        ).copyWith(dividerColor: Colors.transparent),
-                        child: ExpansionTile(
-                          leading: Container(
-                            padding: EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: isCorrect
-                                  ? Colors.green.withOpacity(0.1)
-                                  : Colors.redAccent.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              isCorrect
-                                  ? Icons.check_circle_outline
-                                  : Icons.close,
-                              color: isCorrect
-                                  ? Colors.green
-                                  : Colors.redAccent,
-                              size: 24,
-                            ),
-                          ),
-                          title: Text(
-                            'Question ${index + 1}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.textPrimaryColor,
-                            ),
-                          ),
-                          subtitle: Text(
-                            question.text,
-                            style: TextStyle(
-                              color: AppTheme.textSecondaryColor,
-                              fontSize: 14,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          children: [
-                            Container(
-                              width: double.infinity,
-                              padding: EdgeInsets.only(
-                                top: 16,
-                                bottom: 16,
-                                right: 5,
-                                left: 20,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    question.text,
-                                    style: TextStyle(
-                                      color: AppTheme.textPrimaryColor,
-                                      fontSize: 16,
-                                    ),
-                                    maxLines: 4,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  SizedBox(height: 20),
-
-                                  _builAnswerRow(
-                                    "Your Answer: ",
-                                    selectedAnswer != null
-                                        ? question.options[selectedAnswer]
-                                        : 'Not Answered',
-                                    isCorrect ? Colors.green : Colors.redAccent,
-                                  ),
-                                  SizedBox(height: 12),
-                                  _builAnswerRow(
-                                    "Correct Answer: ",
-                                    question.options[question
-                                        .correctOptionIndex],
-                                    Colors.green,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ).animate().slideX(
-                      begin: 0.3,
-                      duration: Duration(milliseconds: 300),
-                      delay: Duration(milliseconds: 100 * index),
+                    ).animate().fadeIn(
+                      duration: const Duration(milliseconds: 300),
+                      delay: Duration(milliseconds: 80 * index),
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             ),
+
+            // 🔁 Retry Button
             Padding(
               padding: EdgeInsets.all(16),
               child: Row(
@@ -422,7 +402,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                         padding: EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
-                        )
+                        ),
                       ),
                       icon: Icon(Icons.refresh, size: 24),
                       label: Text(
@@ -437,7 +417,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                 ],
               ),
             ),
-            SizedBox(height: 40),
+            const SizedBox(height: 40),
           ],
         ),
       ),

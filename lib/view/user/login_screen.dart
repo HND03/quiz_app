@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:quiz_app/view/user/signup_screen.dart';
 import '../../main.dart';
 import '../../model/authsevice.dart';
+import '../../theme/theme.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final Function(ThemeMode)? onThemeChanged;
+  const LoginScreen({Key? key, this.onThemeChanged}) : super(key: key);
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -32,24 +34,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (user != null && mounted) {
         // Hiển thị thông báo đăng nhập thành công
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Login successful!")),
-        );
-
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Login successful!")));
         // Thay vì pushReplacement sang HomeScreen trực tiếp,
         // ta chỉ pop về AuthWrapper để nó tự điều hướng đúng.
         await Future.delayed(const Duration(milliseconds: 300));
-
         // Xóa toàn bộ các route cũ và quay về AuthWrapper
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const AuthWrapper()),
-              (route) => false,
+          MaterialPageRoute(
+            builder: (_) => AuthWrapper(onThemeChanged: widget.onThemeChanged),
+          ),
+          (route) => false,
         );
       }
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? "Login failed.")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message ?? "Login failed.")));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
@@ -160,7 +162,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const SignupScreen(),
+                                builder: (_) => SignupScreen(
+                                  onThemeChanged: widget.onThemeChanged,
+                                ),
                               ),
                             );
                           },

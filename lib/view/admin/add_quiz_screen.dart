@@ -27,7 +27,9 @@ class QuestionFromItem {
 
   void dispose() {
     questionController.dispose();
-    optionsControllers.forEach((element) => element.dispose());
+    for (var controller in optionsControllers) {
+      controller.dispose();
+    }
   }
 }
 
@@ -36,13 +38,13 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
   final _titleController = TextEditingController();
   final _timeLimitController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   bool _isLoading = false;
   String? _selectedCategoryId;
   List<QuestionFromItem> _questionsItems = [];
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _selectedCategoryId = widget.categoryId;
     _addQuestion();
@@ -50,7 +52,6 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
     _titleController.dispose();
     _timeLimitController.dispose();
     for (var item in _questionsItems) {
@@ -79,69 +80,55 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
   }
 
   Future<void> _saveQuiz() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
+
     if (_selectedCategoryId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Please select a category")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select a category")),
+      );
       return;
     }
-    setState(() {
-      _isLoading = true;
-    });
+
+    setState(() => _isLoading = true);
+
     try {
       final questions = _questionsItems
           .map(
             (item) => Question(
-              text: item.questionController.text.trim(),
-              options: item.optionsControllers
-                  .map((e) => e.text.trim())
-                  .toList(),
-              correctOptionIndex: item.correctOptionIndex,
-            ),
-          )
+          text: item.questionController.text.trim(),
+          options: item.optionsControllers.map((e) => e.text.trim()).toList(),
+          correctOptionIndex: item.correctOptionIndex,
+        ),
+      )
           .toList();
 
-      await _firestore
-          .collection("quizzes")
-          .doc()
-          .set(
-            Quiz(
-              id: _firestore.collection("quizzes").doc().id,
-              title: _titleController.text.trim(),
-              categoryId: _selectedCategoryId!,
-              timeLimit: int.parse(_timeLimitController.text),
-              questions: questions,
-              createdAt: DateTime.now(),
-            ).toMap(),
-          );
+      final quizId = _firestore.collection("quizzes").doc().id;
+
+      await _firestore.collection("quizzes").doc(quizId).set(
+        Quiz(
+          id: quizId,
+          title: _titleController.text.trim(),
+          categoryId: _selectedCategoryId!,
+          timeLimit: int.parse(_timeLimitController.text),
+          questions: questions,
+          createdAt: DateTime.now(),
+        ).toMap(),
+      );
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            "Quiz added successfully",
-            style: TextStyle(color: Colors.white),
-          ),
-          backgroundColor: AppTheme.secondaryColor,
-        ),
+        const SnackBar(content: Text("Quiz added successfully")),
       );
 
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            "Failed to add quiz: $e",
-            style: TextStyle(color: Colors.white),
-          ),
+          content: Text("Failed to add quiz: $e"),
           backgroundColor: Colors.redAccent,
         ),
       );
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
@@ -151,29 +138,33 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
         _timeLimitController.text.isNotEmpty ||
         _questionsItems.isNotEmpty) {
       return await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text("Discard Changes"),
-              content: Text("Are you sure you want to discard changes?"),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context, false);
-                  },
-                  child: Text("Cancel"),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context, true);
-                  },
-                  child: Text(
-                    "Discard",
-                    style: TextStyle(color: Colors.redAccent),
-                  ),
-                ),
-              ],
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: Theme.of(context).cardColor,
+          title: Text(
+            "Discard Changes",
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+          ),
+          content: Text(
+            "Are you sure you want to discard changes?",
+            style:
+            TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Cancel"),
             ),
-          ) ??
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text(
+                "Discard",
+                style: TextStyle(color: Colors.redAccent),
+              ),
+            ),
+          ],
+        ),
+      ) ??
           false;
     }
     return true;
@@ -181,300 +172,237 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: AppTheme.backgroundColor,
           title: Text(
             widget.categoryName != null
                 ? "Add ${widget.categoryName} Quiz"
                 : "Add Quiz",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimaryColor,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           actions: [
             IconButton(
               onPressed: _isLoading ? null : _saveQuiz,
-              icon: Icon(Icons.save, color: AppTheme.primaryColor),
+              icon: Icon(Icons.save, color: theme.primaryColor),
             ),
           ],
         ),
         body: Form(
           key: _formKey,
           child: ListView(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Text(
+                "Quiz Details",
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: "Quiz Title",
+                  hintText: "Enter quiz title",
+                  prefixIcon: Icon(Icons.title, color: AppTheme.primaryColor),
+                ),
+                validator: (value) =>
+                value == null || value.isEmpty ? "Please enter quiz title" : null,
+              ),
+              const SizedBox(height: 20),
+              if (widget.categoryId == null)
+                StreamBuilder<QuerySnapshot>(
+                  stream:
+                  _firestore.collection("categories").orderBy('name').snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) return const Text("Error loading categories");
+                    if (!snapshot.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: AppTheme.primaryColor,
+                        ),
+                      );
+                    }
+
+                    final categories = snapshot.data!.docs
+                        .map((doc) => Category.fromMap(
+                      doc.id,
+                      doc.data() as Map<String, dynamic>,
+                    ))
+                        .toList();
+
+                    return DropdownButtonFormField<String>(
+                      value: _selectedCategoryId,
+                      decoration: const InputDecoration(
+                        labelText: "Category",
+                        hintText: "Select category",
+                        prefixIcon: Icon(Icons.category, color: AppTheme.primaryColor),
+                      ),
+                      items: categories
+                          .map(
+                            (category) => DropdownMenuItem(
+                          value: category.id,
+                          child: Text(category.name),
+                        ),
+                      )
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() => _selectedCategoryId = value);
+                      },
+                      validator: (value) =>
+                      value == null || value.isEmpty ? "Please select a category" : null,
+                    );
+                  },
+                ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _timeLimitController,
+                decoration: const InputDecoration(
+                  labelText: "Time Limit (in minutes)",
+                  hintText: "Enter time limit",
+                  prefixIcon: Icon(Icons.timer, color: AppTheme.primaryColor),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Please enter time limit";
+                  }
+                  final number = int.tryParse(value);
+                  if (number == null || number <= 0) {
+                    return "Please enter a valid time limit";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Quiz Details",
-                    style: TextStyle(
-                      fontSize: 20,
+                    "Questions",
+                    style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimaryColor,
                     ),
                   ),
-                  SizedBox(height: 20),
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: InputDecoration(
-                      fillColor: Colors.white,
-                      contentPadding: EdgeInsets.symmetric(vertical: 20),
-                      labelText: "Quiz Title",
-                      hintText: "Enter quiz title",
-                      prefixIcon: Icon(
-                        Icons.title,
-                        color: AppTheme.primaryColor,
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Please enter quiz title";
-                      }
-                      return null;
-                    },
-                  ),
-                  SizedBox(height: 20),
-                  if (widget.categoryId == null)
-                    StreamBuilder<QuerySnapshot>(
-                      stream: _firestore
-                          .collection("categories")
-                          .orderBy('name')
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasError) {
-                          return Text("Error");
-                        }
-                        if (!snapshot.hasData) {
-                          return Center(
-                            child: CircularProgressIndicator(
-                              color: AppTheme.primaryColor,
-                            ),
-                          );
-                        }
-                        final categories = snapshot.data!.docs
-                            .map(
-                              (doc) => Category.fromMap(
-                                doc.id,
-                                doc.data() as Map<String, dynamic>,
-                              ),
-                            )
-                            .toList();
-                        return DropdownButtonFormField<String>(
-                          value: _selectedCategoryId,
-                          decoration: InputDecoration(
-                            fillColor: Colors.white,
-                            contentPadding: EdgeInsets.symmetric(vertical: 20),
-                            labelText: "Category",
-                            hintText: "Select category",
-                            prefixIcon: Icon(
-                              Icons.category,
-                              color: AppTheme.primaryColor,
-                            ),
-                          ),
-                          items: categories
-                              .map(
-                                (category) => DropdownMenuItem(
-                                  value: category.id,
-                                  child: Text(category.name),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedCategoryId = value;
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Please select a category";
-                            }
-                            return null;
-                          },
-                        );
-                      },
-                    ),
-                  SizedBox(height: 16),
-                  TextFormField(
-                    controller: _timeLimitController,
-                    decoration: InputDecoration(
-                      fillColor: Colors.white,
-                      contentPadding: EdgeInsets.symmetric(vertical: 20),
-                      labelText: "Time Limit (in minutes)",
-                      hintText: "Enter time limit",
-                      prefixIcon: Icon(
-                        Icons.timer,
-                        color: AppTheme.primaryColor,
-                      ),
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Please enter time limit";
-                      }
-                      final number = int.tryParse(value);
-                      if (number == null || number <= 0) {
-                        return "Please enter a valid time limit";
-                      }
-                      return null;
-                    },
-                  ),
-                  SizedBox(height: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Questions',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textPrimaryColor,
-                            ),
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: _addQuestion,
-                            label: Text('Add Question'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryColor,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 16),
-                      ..._questionsItems.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final QuestionFromItem item = entry.value;
-                        return Card(
-                          margin: EdgeInsets.only(bottom: 16),
-                          child: Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      "Question ${index + 1}",
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.primaryColor,
-                                      ),
-                                    ),
-                                    if (_questionsItems.length > 1)
-                                      IconButton(
-                                        icon: Icon(
-                                          Icons.delete,
-                                          color: Colors.redAccent,
-                                        ),
-                                        onPressed: () => _removeQuestion(index),
-                                      ),
-                                  ],
-                                ),
-                                SizedBox(height: 16),
-                                TextFormField(
-                                  controller: item.questionController,
-                                  decoration: InputDecoration(
-                                    labelText: "Question",
-                                    hintText: "Enter question",
-                                    prefixIcon: Icon(
-                                      Icons.question_answer,
-                                      color: AppTheme.primaryColor,
-                                    ),
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return "Please enter question";
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                SizedBox(height: 16),
-                                ...item.optionsControllers.asMap().entries.map((
-                                  entry,
-                                ) {
-                                  final optionIndex = entry.key;
-                                  final controller = entry.value;
-                                  return Padding(
-                                    padding: EdgeInsets.only(bottom: 8),
-                                    child: Row(
-                                      children: [
-                                        Radio<int>(
-                                          activeColor: AppTheme.primaryColor,
-                                          value: optionIndex,
-                                          groupValue: item.correctOptionIndex,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              item.correctOptionIndex = value!;
-                                            });
-                                          },
-                                        ),
-                                        Expanded(
-                                          child: TextFormField(
-                                            controller: controller,
-                                            decoration: InputDecoration(
-                                              labelText:
-                                                  "Option ${optionIndex + 1}",
-                                              hintText: "Enter Option",
-                                            ),
-                                            validator: (value) {
-                                              if (value == null ||
-                                                  value.isEmpty) {
-                                                return "Please enter option";
-                                              }
-                                              return null;
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
-                      SizedBox(height: 32),
-                      Center(
-                        child: SizedBox(
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _saveQuiz,
-                            child: _isLoading
-                                ? SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : Text(
-                                    "Saved Quiz",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  ElevatedButton.icon(
+                    onPressed: _addQuestion,
+                    icon: const Icon(Icons.add),
+                    label: const Text("Add Question"),
                   ),
                 ],
+              ),
+              const SizedBox(height: 16),
+              ..._questionsItems.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Question ${index + 1}",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: theme.primaryColor,
+                              ),
+                            ),
+                            if (_questionsItems.length > 1)
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.redAccent),
+                                onPressed: () => _removeQuestion(index),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: item.questionController,
+                          decoration: const InputDecoration(
+                            labelText: "Question",
+                            hintText: "Enter question",
+                            prefixIcon: Icon(Icons.help_outline,
+                                color: AppTheme.primaryColor),
+                          ),
+                          validator: (value) =>
+                          value == null || value.isEmpty ? "Please enter question" : null,
+                        ),
+                        const SizedBox(height: 16),
+                        ...item.optionsControllers.asMap().entries.map((entry) {
+                          final optionIndex = entry.key;
+                          final controller = entry.value;
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              children: [
+                                Radio<int>(
+                                  activeColor: AppTheme.primaryColor,
+                                  value: optionIndex,
+                                  groupValue: item.correctOptionIndex,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      item.correctOptionIndex = value!;
+                                    });
+                                  },
+                                ),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: controller,
+                                    decoration: InputDecoration(
+                                      labelText: "Option ${optionIndex + 1}",
+                                      hintText: "Enter Option",
+                                    ),
+                                    validator: (value) => value == null || value.isEmpty
+                                        ? "Please enter option"
+                                        : null,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 32),
+              Center(
+                child: SizedBox(
+                  height: 50,
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _saveQuiz,
+                    child: _isLoading
+                        ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor:
+                        AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                        : const Text(
+                      "Save Quiz",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

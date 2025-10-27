@@ -2,10 +2,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../model/authsevice.dart';
+import '../../theme/theme.dart';
 import 'login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
-  const SignupScreen({super.key});
+  final Function(ThemeMode)? onThemeChanged;
+  const SignupScreen({Key? key, this.onThemeChanged}) : super(key: key);
 
   @override
   State<SignupScreen> createState() => _SignupScreenState();
@@ -50,7 +52,9 @@ class _SignupScreenState extends State<SignupScreen> {
         );
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          MaterialPageRoute(
+            builder: (_) => LoginScreen(onThemeChanged: widget.onThemeChanged),
+          ),
         );
       }
     } catch (e) {
@@ -196,7 +200,9 @@ class _SignupScreenState extends State<SignupScreen> {
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const LoginScreen(),
+                                builder: (_) => LoginScreen(
+                                  onThemeChanged: widget.onThemeChanged,
+                                ),
                               ),
                             );
                           },

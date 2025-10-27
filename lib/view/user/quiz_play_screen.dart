@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:quiz_app/theme/theme.dart';
@@ -18,18 +17,15 @@ class QuizPlayScreen extends StatefulWidget {
 class _QuizPlayScreenState extends State<QuizPlayScreen>
     with SingleTickerProviderStateMixin {
   late PageController _pageController;
-
   int _currentQuestionIndex = 0;
   Map<int, int?> _selectedAnswers = {};
-
   int _totalMinutes = 0;
   int _remainingMinutes = 0;
   int _remainingSeconds = 0;
-  late Timer? _timer;
+  Timer? _timer;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _pageController = PageController();
     _totalMinutes = widget.quiz.timeLimit;
@@ -39,7 +35,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
   }
 
   void _startTimer() {
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         if (_remainingSeconds > 0) {
           _remainingSeconds--;
@@ -67,7 +63,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
   void _nextQuestion() {
     if (_currentQuestionIndex < widget.quiz.questions.length - 1) {
       _pageController.nextPage(
-        duration: Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else {
@@ -78,9 +74,9 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
   void _completeQuiz() {
     _timer?.cancel();
     int correctAnswers = _calculateScore();
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text("Quiz Completed")));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Quiz Completed")),
+    );
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -108,8 +104,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
 
   Color _getTimerColor() {
     double timeProgress =
-        1 -
-        ((_remainingMinutes * 60 + _remainingSeconds) / (_totalMinutes * 60));
+        1 - ((_remainingMinutes * 60 + _remainingSeconds) / (_totalMinutes * 60));
     if (timeProgress < 0.4) return Colors.green;
     if (timeProgress < 0.6) return Colors.orange;
     if (timeProgress < 0.8) return Colors.deepOrangeAccent;
@@ -118,7 +113,6 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
 
   @override
   void dispose() {
-    // TODO: implement dispose
     _timer?.cancel();
     _pageController.dispose();
     super.dispose();
@@ -126,24 +120,33 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = theme.cardColor;
+    final textPrimary = theme.textTheme.bodyLarge?.color;
+    final textSecondary =
+    isDark ? Colors.grey[400] : AppTheme.textSecondaryColor;
+
     return Scaffold(
-      backgroundColor: AppTheme.primaryColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header: Timer + Progress
             Container(
-              margin: EdgeInsets.all(12),
-              padding: EdgeInsets.all(16),
+              margin: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                  ),
+                  if (!isDark)
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
                 ],
               ),
               child: Column(
@@ -152,11 +155,9 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        icon: Icon(Icons.close),
-                        color: AppTheme.primaryColor,
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                        color: theme.primaryColor,
                       ),
                       Stack(
                         alignment: Alignment.center,
@@ -165,11 +166,11 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
                             height: 55,
                             width: 55,
                             child: CircularProgressIndicator(
-                              value:
-                                  (_remainingMinutes * 60 + _remainingSeconds) /
+                              value: (_remainingMinutes * 60 + _remainingSeconds) /
                                   (_totalMinutes * 60),
                               strokeWidth: 5,
-                              backgroundColor: Colors.grey[300],
+                              backgroundColor:
+                              isDark ? Colors.grey[800] : Colors.grey[300],
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 _getTimerColor(),
                               ),
@@ -187,25 +188,25 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
                       ),
                     ],
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   TweenAnimationBuilder<double>(
                     tween: Tween(
                       begin: 0,
-                      end:
-                          (_currentQuestionIndex + 1) /
+                      end: (_currentQuestionIndex + 1) /
                           widget.quiz.questions.length,
                     ),
-                    duration: Duration(milliseconds: 300),
+                    duration: const Duration(milliseconds: 300),
                     builder: (context, progress, child) {
                       return LinearProgressIndicator(
-                        borderRadius: BorderRadius.horizontal(
+                        borderRadius: const BorderRadius.horizontal(
                           left: Radius.circular(10),
                           right: Radius.circular(10),
                         ),
                         value: progress,
-                        backgroundColor: Colors.grey[300],
+                        backgroundColor:
+                        isDark ? Colors.grey[800] : Colors.grey[300],
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          AppTheme.primaryColor,
+                          theme.primaryColor,
                         ),
                         minHeight: 6,
                       );
@@ -214,10 +215,12 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
                 ],
               ),
             ),
+
+            // Questions
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
-                physics: NeverScrollableScrollPhysics(),
+                physics: const NeverScrollableScrollPhysics(),
                 itemCount: widget.quiz.questions.length,
                 onPageChanged: (index) {
                   setState(() {
@@ -226,7 +229,15 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
                 },
                 itemBuilder: (context, index) {
                   final question = widget.quiz.questions[index];
-                  return _buildQuestionCard(question, index);
+                  return _buildQuestionCard(
+                    question,
+                    index,
+                    theme,
+                    textPrimary,
+                    textSecondary,
+                    isDark,
+                    cardColor,
+                  );
                 },
               ),
             ),
@@ -236,19 +247,28 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
     );
   }
 
-  Widget _buildQuestionCard(Question question, int index) {
+  Widget _buildQuestionCard(
+      Question question,
+      int index,
+      ThemeData theme,
+      Color? textPrimary,
+      Color? textSecondary,
+      bool isDark,
+      Color cardColor,
+      ) {
     return Container(
-      margin: EdgeInsets.all(12),
-      padding: EdgeInsets.all(16),
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
+          if (!isDark)
+            const BoxShadow(
+              color: Colors.black12,
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
         ],
       ),
       child: Column(
@@ -256,18 +276,18 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
         children: [
           Text(
             'Question ${index + 1}',
-            style: TextStyle(fontSize: 16, color: AppTheme.textSecondaryColor),
+            style: TextStyle(fontSize: 16, color: textSecondary),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             question.text,
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimaryColor,
+              color: textPrimary,
             ),
           ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           ...question.options.asMap().entries.map((entry) {
             final optionIndex = entry.key;
             final option = entry.value;
@@ -275,75 +295,70 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
             final isCorrect =
                 _selectedAnswers[index] == question.correctOptionIndex;
 
+            final bgColor = isSelected
+                ? (isCorrect
+                ? AppTheme.secondaryColor.withOpacity(0.15)
+                : Colors.redAccent.withOpacity(0.15))
+                : cardColor;
+
+            final borderColor = isSelected
+                ? (isCorrect ? AppTheme.secondaryColor : Colors.redAccent)
+                : (isDark ? Colors.grey[700]! : Colors.grey.shade300);
+
+            final textColor = isSelected
+                ? (isCorrect
+                ? AppTheme.secondaryColor
+                : Colors.redAccent)
+                : (_selectedAnswers[index] != null
+                ? (isDark ? Colors.grey[500]! : Colors.grey.shade600)
+                : textPrimary);
+
             return Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: 300),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? isCorrect
-                                ? AppTheme.secondaryColor.withOpacity(0.1)
-                                : Colors.redAccent.withOpacity(0.1)
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? isCorrect
-                                  ? AppTheme.secondaryColor
-                                  : Colors.redAccent
-                            : Colors.grey.shade300,
-                      ),
-                    ),
-                    child: ListTile(
-                      onTap: _selectedAnswers[index] == null
-                          ? () => _selectAnswer(optionIndex)
-                          : null,
-                      title: Text(
-                        option,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: isSelected
-                              ? isCorrect
-                                    ? AppTheme.secondaryColor
-                                    : Colors.redAccent
-                              : _selectedAnswers[index] != null
-                              ? Colors.grey.shade500
-                              : AppTheme.textPrimaryColor,
-                        ),
-                      ),
-                      trailing: isSelected
-                          ? isCorrect
-                                ? Icon(
-                                    Icons.check_circle_rounded,
-                                    color: AppTheme.secondaryColor,
-                                  )
-                                : Icon(Icons.close, color: Colors.redAccent)
-                          : null,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: borderColor),
+                ),
+                child: ListTile(
+                  onTap: _selectedAnswers[index] == null
+                      ? () => _selectAnswer(optionIndex)
+                      : null,
+                  title: Text(
+                    option,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: textColor,
                     ),
                   ),
-                )
-                .animate(delay: Duration(milliseconds: 300))
-                .slideX(
-                  begin: 0.5,
-                  end: 0,
-                  duration: Duration(milliseconds: 300),
-                )
+                  trailing: isSelected
+                      ? Icon(
+                    isCorrect ? Icons.check_circle_rounded : Icons.close,
+                    color:
+                    isCorrect ? AppTheme.secondaryColor : Colors.redAccent,
+                  )
+                      : null,
+                ),
+              ),
+            )
+                .animate(delay: const Duration(milliseconds: 300))
+                .slideX(begin: 0.5, end: 0, duration: const Duration(milliseconds: 300))
                 .fadeIn();
           }),
-          Spacer(),
+          const Spacer(),
           SizedBox(
             width: double.infinity,
             height: 55,
             child: ElevatedButton(
-              onPressed: () {
-                _selectedAnswers[index] != null ? _nextQuestion() : null;
-              },
+              onPressed: _selectedAnswers[index] != null ? _nextQuestion : null,
               child: Text(
                 index == widget.quiz.questions.length - 1
                     ? "Finish Quiz"
                     : "Next Question",
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -353,8 +368,5 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
         ],
       ),
     );
-    // .animate()
-    // .fadeIn(duration: Duration(milliseconds: 500))
-    // .slideY(begin: 0.1, end: 0);
   }
 }

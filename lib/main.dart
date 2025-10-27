@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:quiz_app/theme/theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:quiz_app/view/user/home_screen.dart';
@@ -10,53 +11,79 @@ import 'firebase_options.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform, //Đảm bảo dùng đúng file cấu hình Firebase
+    options: DefaultFirebaseOptions.currentPlatform,
   );
-  // Load file .env
-  try {
-    await dotenv.load(fileName: ".env");
-    print("✅ .env loaded successfully!");
-  } catch (e) {
-    print("❌ Failed to load .env: $e");
-  }
-  runApp(const MyApp());
+
+  await dotenv.load(fileName: ".env");
+
+  // 🔹 Đọc theme mode được lưu trong SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
+  final savedTheme = prefs.getString('themeMode') ?? 'light';
+  final themeMode = savedTheme == 'dark' ? ThemeMode.dark : ThemeMode.light;
+
+  runApp(MyApp(initialThemeMode: themeMode));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MyApp extends StatefulWidget {
+  final ThemeMode initialThemeMode;
+
+  const MyApp({super.key, required this.initialThemeMode});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late ThemeMode _themeMode;
+
+  @override
+  void initState() {
+    super.initState();
+    _themeMode = widget.initialThemeMode;
+  }
+
+  /// 🔹 Hàm đổi theme (Light <-> Dark)
+  Future<void> _toggleTheme(ThemeMode mode) async {
+    setState(() {
+      _themeMode = mode;
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('themeMode', mode == ThemeMode.dark ? 'dark' : 'light');
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: "Quiz App",
-      theme: AppTheme.theme,
-      home: const AuthWrapper(),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: _themeMode,
+      home: AuthWrapper(onThemeChanged: _toggleTheme),
     );
   }
 }
+
 class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({super.key});
+  final Function(ThemeMode)? onThemeChanged;
+  const AuthWrapper({super.key, this.onThemeChanged});
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        //Khi đang chờ kết nối Firebase
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-
-        //Nếu người dùng đã đăng nhập
         if (snapshot.hasData) {
-          return const HomeScreen();
+          return HomeScreen(onThemeChanged: onThemeChanged);
+        } else {
+          return LoginScreen(onThemeChanged: onThemeChanged);
         }
-
-        //Nếu người dùng đã logout hoặc chưa đăng nhập
-        return const LoginScreen();
       },
     );
   }

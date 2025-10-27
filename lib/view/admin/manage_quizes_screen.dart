@@ -27,7 +27,6 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _fetchCategories();
   }
@@ -60,19 +59,22 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
 
   Stream<QuerySnapshot> _getQuizStream() {
     Query query = _firestore.collection('quizzes');
-
     String? filterCategoryId = _selectedCategoryId ?? widget.categoryId;
     if (_selectedCategoryId != null) {
       query = query.where('categoryId', isEqualTo: filterCategoryId);
     }
-
     return query.snapshots();
   }
 
-  Widget _buildTitle() {
+  Widget _buildTitle(BuildContext context) {
+    final textPrimary = Theme.of(context).textTheme.bodyLarge?.color;
+
     String? categoryId = _selectedCategoryId ?? widget.categoryId;
     if (categoryId == null) {
-      return Text("All Quizzes", style: TextStyle(fontWeight: FontWeight.bold));
+      return Text(
+        "All Quizzes",
+        style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary),
+      );
     }
     return StreamBuilder<DocumentSnapshot>(
       stream: _firestore.collection('categories').doc(categoryId).snapshots(),
@@ -80,14 +82,13 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Text(
             "Loading....",
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary),
           );
         }
         if (!snapshot.hasData || !snapshot.data!.exists) {
-          // Nếu không có dữ liệu hoặc document không tồn tại
           return Text(
-            "Unknown Category", // Hiển thị tên mặc định
-            style: TextStyle(fontWeight: FontWeight.bold),
+            "Unknown Category",
+            style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary),
           );
         }
         final category = Category.fromMap(
@@ -96,7 +97,7 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
         );
         return Text(
           category.name,
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary),
         );
       },
     );
@@ -104,10 +105,16 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textPrimary = theme.textTheme.bodyLarge?.color;
+    final textSecondary = theme.textTheme.bodyMedium?.color?.withOpacity(0.7);
+    final cardColor = theme.cardColor;
+    final scaffoldBg = theme.scaffoldBackgroundColor;
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppTheme.backgroundColor,
-        title: _buildTitle(),
+        backgroundColor: cardColor,
+        title: _buildTitle(context),
         actions: [
           IconButton(
             icon: Icon(Icons.add_circle_outline, color: AppTheme.primaryColor),
@@ -125,16 +132,19 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
           ),
         ],
       ),
+      backgroundColor: scaffoldBg,
       body: Column(
         children: [
           Padding(
-            padding: EdgeInsets.all(12),
+            padding: const EdgeInsets.all(12),
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                fillColor: Colors.white,
+                filled: false,
+                fillColor: cardColor,
                 hintText: "Search Quizzes",
-                prefixIcon: Icon(Icons.search),
+                hintStyle: TextStyle(color: textSecondary),
+                prefixIcon: Icon(Icons.search, color: textSecondary),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -147,20 +157,27 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
             ),
           ),
           Padding(
-            padding: EdgeInsets.all(12),
+            padding: const EdgeInsets.all(12),
             child: DropdownButtonFormField<String>(
               decoration: InputDecoration(
-                fillColor: Colors.white,
-                contentPadding: EdgeInsets.symmetric(
+                filled: false,
+                fillColor: cardColor,
+                contentPadding: const EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 8,
                 ),
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 hintText: "Category",
+                hintStyle: TextStyle(color: textSecondary),
               ),
               value: _selectedCategoryId,
               items: [
-                DropdownMenuItem(child: Text("All Categories"), value: null),
+                const DropdownMenuItem(
+                  child: Text("All Categories"),
+                  value: null,
+                ),
                 if (_initialCategory != null &&
                     _categories.every((c) => c.id != _initialCategory!.id))
                   DropdownMenuItem(
@@ -185,16 +202,17 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
             child: StreamBuilder<QuerySnapshot>(
               stream: _getQuizStream(),
               builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(child: Text("Error"));
-                }
-                if (!snapshot.hasData) {
+                if (snapshot.hasError)
+                  return Center(
+                    child: Text("Error", style: TextStyle(color: textPrimary)),
+                  );
+                if (!snapshot.hasData)
                   return Center(
                     child: CircularProgressIndicator(
                       color: AppTheme.primaryColor,
                     ),
                   );
-                }
+
                 final quizzes = snapshot.data!.docs
                     .map(
                       (doc) => Quiz.fromMap(
@@ -208,6 +226,7 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
                           quiz.title.toLowerCase().contains(_searchQuery),
                     )
                     .toList();
+
                 if (quizzes.isEmpty) {
                   return Center(
                     child: Column(
@@ -216,17 +235,14 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
                         Icon(
                           Icons.quiz_outlined,
                           size: 64,
-                          color: AppTheme.textSecondaryColor,
+                          color: textSecondary,
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         Text(
                           "No quizzes yet",
-                          style: TextStyle(
-                            color: AppTheme.textSecondaryColor,
-                            fontSize: 18,
-                          ),
+                          style: TextStyle(color: textSecondary, fontSize: 18),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         ElevatedButton(
                           onPressed: () {
                             Navigator.push(
@@ -239,23 +255,25 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
                               ),
                             );
                           },
-                          child: Text("Add Quiz"),
+                          child: const Text("Add Quiz"),
                         ),
                       ],
                     ),
                   );
                 }
+
                 return ListView.builder(
-                  padding: EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
                   itemCount: quizzes.length,
                   itemBuilder: (context, index) {
                     final Quiz quiz = quizzes[index];
                     return Card(
-                      margin: EdgeInsets.only(bottom: 12),
+                      color: cardColor,
+                      margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
-                        contentPadding: EdgeInsets.all(16),
+                        contentPadding: const EdgeInsets.all(16),
                         leading: Container(
-                          padding: EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: AppTheme.primaryColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
@@ -271,26 +289,43 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
+                            color: textPrimary,
                           ),
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Row(
                               children: [
-                                Icon(Icons.question_answer_outlined, size: 16),
-                                SizedBox(width: 4),
-                                Text(
-                                  "${quiz.questions.length} Questions",
-                                  style: TextStyle(fontSize: 11),
+                                Icon(
+                                  Icons.question_answer_outlined,
+                                  size: 16,
+                                  color: textSecondary,
                                 ),
-                                SizedBox(width: 16),
-                                Icon(Icons.timer_outlined, size: 16),
-                                SizedBox(width: 4),
-                                Text(
-                                  "${quiz.timeLimit} mins",
-                                  style: TextStyle(fontSize: 11),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    "${quiz.questions.length} Questions",
+                                    style: TextStyle(fontSize: 12, color: textSecondary),
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: true,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Icon(
+                                  Icons.timer_outlined,
+                                  size: 16,
+                                  color: textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    "${quiz.timeLimit} mins",
+                                    style: TextStyle(fontSize: 12, color: textSecondary),
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: true,
+                                  ),
                                 ),
                               ],
                             ),
@@ -306,7 +341,7 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
                                   Icons.edit,
                                   color: AppTheme.primaryColor,
                                 ),
-                                title: Text("Edit"),
+                                title: const Text("Edit"),
                               ),
                             ),
                             PopupMenuItem(
@@ -317,7 +352,7 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
                                   Icons.delete,
                                   color: Colors.redAccent,
                                 ),
-                                title: Text("Delete"),
+                                title: const Text("Delete"),
                               ),
                             ),
                           ],
@@ -350,16 +385,19 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text("Delete Quiz"),
-          content: Text("Are you sure you want to delete this quiz?"),
+          title: const Text("Delete Quiz"),
+          content: const Text("Are you sure you want to delete this quiz?"),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text("Cancel"),
+              child: const Text("Cancel"),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: Text("Delete", style: TextStyle(color: Colors.redAccent)),
+              child: const Text(
+                "Delete",
+                style: TextStyle(color: Colors.redAccent),
+              ),
             ),
           ],
         ),

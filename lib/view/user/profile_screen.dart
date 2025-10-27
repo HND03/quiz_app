@@ -6,11 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:quiz_app/theme/theme.dart';
+import 'package:quiz_app/view/user/theme_selection_screen.dart';
 
+import '../../main.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final Function(ThemeMode) onThemeChanged;
+  const ProfileScreen({super.key, required this.onThemeChanged});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -123,7 +126,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         final data = jsonDecode(resBody);
         final imageUrl = data["secure_url"];
 
-        // ✅ Cập nhật avatar trong Firebase Auth
+        // Update Avatar in Firebase Auth
         await user.updatePhotoURL(imageUrl);
         await FirebaseAuth.instance.currentUser?.reload();
 
@@ -158,16 +161,18 @@ class _ProfileScreenState extends State<ProfileScreen>
       await user!.updateDisplayName(newName);
       await user!.reload();
 
-      // Hiển thị thông báo
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Display name updated successfully!")),
       );
 
-      // Refresh lại màn hình bằng cách reload toàn bộ ProfileScreen
+      // Refresh the screen by reloading the entire ProfileScreen
       if (mounted) {
-        Navigator.pushReplacement(
+        Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const ProfileScreen()),
+          MaterialPageRoute(
+            builder: (_) =>
+                ProfileScreen(onThemeChanged: widget.onThemeChanged),
+          ),
         );
       }
     } catch (e) {
@@ -229,10 +234,13 @@ class _ProfileScreenState extends State<ProfileScreen>
             const SnackBar(content: Text("Account deleted successfully.")),
           );
 
-          // Điều hướng về LoginScreen và xoá hết stack cũ
+          // Navigate to LoginScreen and clear all old stacks
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            MaterialPageRoute(
+              builder: (_) =>
+                  AuthWrapper(onThemeChanged: widget.onThemeChanged),
+            ),
             (route) => false,
           );
         }
@@ -395,9 +403,18 @@ class _ProfileScreenState extends State<ProfileScreen>
               onTap: () {},
             ),
             _buildSettingTile(
-              icon: Icons.dark_mode_outlined,
-              title: "Dark Mode",
-              onTap: () {},
+              icon: Icons.color_lens_outlined,
+              title: "App Theme",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ThemeSelectionScreen(
+                      onThemeSelected: widget.onThemeChanged,
+                    ),
+                  ),
+                );
+              },
             ),
             _buildSettingTile(
               icon: Icons.notifications_outlined,
@@ -437,11 +454,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ),
                           );
 
-                          // Quay về trang Login bằng cách làm mới AuthWrapper
+                          // Return to the Login page by refreshing AuthWrapper
                           Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const LoginScreen(),
+                              builder: (_) => AuthWrapper(
+                                onThemeChanged: widget.onThemeChanged,
+                              ),
                             ),
                             (route) => false,
                           );

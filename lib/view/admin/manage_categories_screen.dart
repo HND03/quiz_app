@@ -15,14 +15,21 @@ class ManageCategoriesScreen extends StatefulWidget {
 
 class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textPrimary = theme.textTheme.bodyLarge?.color;
+    final textSecondary = theme.textTheme.bodyMedium?.color?.withOpacity(0.7);
+    final cardColor = theme.cardColor;
+    final scaffoldBg = theme.scaffoldBackgroundColor;
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppTheme.backgroundColor,
+        backgroundColor: cardColor,
         title: Text(
           'Manage Categories',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary),
         ),
         actions: [
           IconButton(
@@ -30,25 +37,25 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => AddCategoryScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => AddCategoryScreen()),
               );
             },
           ),
         ],
       ),
+      backgroundColor: scaffoldBg,
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore.collection("categories").orderBy('name').snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Error'));
-          }
-          if (!snapshot.hasData) {
+          if (snapshot.hasError)
+            return Center(
+              child: Text('Error', style: TextStyle(color: textPrimary)),
+            );
+          if (!snapshot.hasData)
             return Center(
               child: CircularProgressIndicator(color: AppTheme.primaryColor),
             );
-          }
+
           final categories = snapshot.data!.docs
               .map(
                 (doc) => Category.fromMap(
@@ -57,25 +64,19 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                 ),
               )
               .toList();
+
           if (categories.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.category_outlined,
-                    size: 64,
-                    color: AppTheme.textSecondaryColor,
-                  ),
-                  SizedBox(height: 16),
+                  Icon(Icons.category_outlined, size: 64, color: textSecondary),
+                  const SizedBox(height: 16),
                   Text(
                     "No Categories found",
-                    style: TextStyle(
-                      color: AppTheme.textSecondaryColor,
-                      fontSize: 18,
-                    ),
+                    style: TextStyle(color: textSecondary, fontSize: 18),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   ElevatedButton(
                     onPressed: () {
                       Navigator.push(
@@ -85,22 +86,25 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                         ),
                       );
                     },
-                    child: Text("Add Category"),
+                    child: const Text("Add Category"),
                   ),
                 ],
               ),
             );
           }
+
           return ListView.builder(
+            padding: const EdgeInsets.all(12),
             itemCount: categories.length,
             itemBuilder: (context, index) {
               final Category category = categories[index];
               return Card(
-                margin: EdgeInsets.only(bottom: 12),
+                color: cardColor,
+                margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
-                  contentPadding: EdgeInsets.all(16),
+                  contentPadding: const EdgeInsets.all(16),
                   leading: Container(
-                    padding: EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: AppTheme.primaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -112,9 +116,16 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                   ),
                   title: Text(
                     category.name,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: textPrimary,
+                    ),
                   ),
-                  subtitle: Text(category.description),
+                  subtitle: Text(
+                    category.description,
+                    style: TextStyle(color: textSecondary),
+                  ),
                   trailing: PopupMenuButton(
                     itemBuilder: (context) => [
                       PopupMenuItem(
@@ -124,7 +135,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                             Icons.edit,
                             color: AppTheme.primaryColor,
                           ),
-                          title: Text("Edit"),
+                          title: const Text("Edit"),
                           contentPadding: EdgeInsets.zero,
                         ),
                       ),
@@ -132,24 +143,22 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                         value: 'delete',
                         child: ListTile(
                           leading: Icon(Icons.delete, color: Colors.redAccent),
-                          title: Text("Delete"),
+                          title: const Text("Delete"),
                           contentPadding: EdgeInsets.zero,
                         ),
                       ),
                     ],
-                    onSelected: (value) {
-                      _handleCategoryAction(context, value, category);
-                    },
+                    onSelected: (value) =>
+                        _handleCategoryAction(context, value, category),
                   ),
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) =>
-                            ManageQuizesScreen(
-                              categoryId: category.id,
-                              categoryName: category.name,
-                            ),
+                        builder: (context) => ManageQuizesScreen(
+                          categoryId: category.id,
+                          categoryName: category.name,
+                        ),
                       ),
                     );
                   },
@@ -170,7 +179,8 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     if (action == "edit") {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context)  => AddCategoryScreen(category: category),
+        MaterialPageRoute(
+          builder: (context) => AddCategoryScreen(category: category),
         ),
       );
     } else if (action == "delete") {
