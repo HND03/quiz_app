@@ -68,16 +68,36 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final backgroundColor =
+    isDark ? AppTheme.darkBackgroundColor : AppTheme.backgroundColor;
+    final cardColor = isDark ? AppTheme.darkCardColor : Colors.white;
+    final textColor =
+    isDark ? AppTheme.darkTextPrimaryColor : AppTheme.textPrimaryColor;
+    final secondaryTextColor =
+    isDark ? AppTheme.darkTextSecondaryColor : AppTheme.textSecondaryColor;
+
     return Scaffold(
       body: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+          gradient: isDark
+              ? const LinearGradient(
             begin: Alignment.topCenter,
             colors: [
-              Colors.blueAccent[700]!,
-              Colors.blueAccent[400]!,
-              Colors.blueAccent[100]!,
+              Color(0xFF0D0D0D),
+              Color(0xFF121212),
+              Color(0xFF1E1E1E),
+            ],
+          )
+              : LinearGradient(
+            begin: Alignment.topCenter,
+            colors: [
+              AppTheme.primaryColor,
+              AppTheme.primaryColor.withOpacity(0.8),
+              AppTheme.primaryColor.withOpacity(0.5),
             ],
           ),
         ),
@@ -106,9 +126,9 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(height: 20),
               Container(
                 height: 600,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(60),
                     topRight: Radius.circular(60),
                   ),
@@ -123,20 +143,24 @@ class _SignupScreenState extends State<SignupScreen> {
                         Container(
                           padding: const EdgeInsets.all(15),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: isDark
+                                ? const Color(0xFF2A2A2A)
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(10),
-                            boxShadow: const [
+                            boxShadow: !isDark
+                                ? const [
                               BoxShadow(
                                 color: Color.fromRGBO(130, 177, 255, 1.0),
                                 blurRadius: 20,
                                 offset: Offset(0, 10),
                               ),
-                            ],
+                            ]: [],
                           ),
                           child: Column(
                             children: <Widget>[
                               TextFormField(
                                 controller: _emailController,
+                                style: TextStyle(color: textColor),
                                 decoration: const InputDecoration(
                                   labelText: 'Email',
                                   prefixIcon: Icon(Icons.email_outlined),
@@ -149,6 +173,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               TextFormField(
                                 controller: _passwordController,
                                 obscureText: true,
+                                style: TextStyle(color: textColor),
                                 decoration: const InputDecoration(
                                   labelText: 'Password',
                                   prefixIcon: Icon(Icons.lock_outline),
@@ -161,6 +186,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               TextFormField(
                                 controller: _confirmPasswordController,
                                 obscureText: true,
+                                style: TextStyle(color: textColor),
                                 decoration: const InputDecoration(
                                   labelText: 'Confirm Password',
                                   prefixIcon: Icon(Icons.lock_reset_outlined),
@@ -179,7 +205,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _signup,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blueAccent,
+                              backgroundColor: AppTheme.primaryColor,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
@@ -209,7 +235,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           child: const Text(
                             "Already have an account? Log in",
                             style: TextStyle(
-                              color: Colors.blueAccent,
+                              color: AppTheme.primaryColor,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

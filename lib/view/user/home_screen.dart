@@ -206,75 +206,81 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
 
               flexibleSpace: FlexibleSpaceBar(
-                background: SafeArea(
-                  child: Column(
-                    children: [
-                      SizedBox(height: kToolbarHeight + 16),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Welcome, Learner",
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                background: Container(
+                  color: isDark ? Colors.black : AppTheme.primaryColor, // 👈 đổi màu theo theme
+                  child: SafeArea(
+                    child: Column(
+                      children: [
+                        SizedBox(height: kToolbarHeight + 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Welcome, Learner",
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                               ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              "Let's test your knowledge today!",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white.withOpacity(0.8),
+                              const SizedBox(height: 8),
+                              Text(
+                                "Let's test your knowledge today!",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white.withOpacity(0.8),
+                                ),
                               ),
-                            ),
-                            SizedBox(height: 16),
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: TextField(
-                                controller: _searchController,
-                                onChanged: (value) => _filterCategories(value),
-                                decoration: InputDecoration(
-                                  hintText: "Search categories...",
-                                  hintStyle: TextStyle(
+                              const SizedBox(height: 16),
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: TextField(
+                                  controller: _searchController,
+                                  onChanged: (value) => _filterCategories(value),
+                                  decoration: InputDecoration(
+                                    hintText: "Search categories...",
+                                    hintStyle: TextStyle(
                                       color: isDark
                                           ? Colors.grey[400]
-                                          : AppTheme.textSecondaryColor),
-                                  prefixIcon: Icon(Icons.search,
-                                      color: AppTheme.primaryColor),
-                                  suffixIcon: _searchController.text.isNotEmpty
-                                      ? IconButton(
-                                          onPressed: () {
-                                            _searchController.clear();
-                                            _filterCategories('');
-                                          },
-                                    icon: const Icon(Icons.clear),
-                                    color: AppTheme.primaryColor,
-                                        )
-                                      : null,
-                                  border: InputBorder.none,
+                                          : AppTheme.textSecondaryColor,
+                                    ),
+                                    prefixIcon: Icon(Icons.search,
+                                        color: AppTheme.primaryColor),
+                                    suffixIcon: _searchController.text.isNotEmpty
+                                        ? IconButton(
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        _filterCategories('');
+                                      },
+                                      icon: const Icon(Icons.clear),
+                                      color: AppTheme.primaryColor,
+                                    )
+                                        : null,
+                                    border: InputBorder.none,
+                                  ),
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : AppTheme.textPrimaryColor,
+                                  ),
                                 ),
-                                style: TextStyle(color: textPrimary),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 collapseMode: CollapseMode.pin,

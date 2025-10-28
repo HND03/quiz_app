@@ -9,6 +9,7 @@ import 'package:quiz_app/theme/theme.dart';
 import 'package:quiz_app/view/user/theme_selection_screen.dart';
 
 import '../../main.dart';
+import 'change_password_screen.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -276,11 +277,13 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   Widget build(BuildContext context) {
     _animationController.forward();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: isDark ? Colors.black : AppTheme.primaryColor,
         elevation: 0,
         centerTitle: true,
         title: const Text("Profile", style: TextStyle(color: Colors.white)),
@@ -400,7 +403,14 @@ class _ProfileScreenState extends State<ProfileScreen>
             _buildSettingTile(
               icon: Icons.lock_outline,
               title: "Change Password",
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ChangePasswordScreen(),
+                  ),
+                );
+              },
             ),
             _buildSettingTile(
               icon: Icons.color_lens_outlined,
