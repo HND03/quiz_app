@@ -11,6 +11,7 @@ import 'package:quiz_app/view/user/theme_selection_screen.dart';
 import '../../main.dart';
 import 'change_password_screen.dart';
 import 'login_screen.dart';
+import 'notification_setting_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final Function(ThemeMode) onThemeChanged;
@@ -429,7 +430,14 @@ class _ProfileScreenState extends State<ProfileScreen>
             _buildSettingTile(
               icon: Icons.notifications_outlined,
               title: "Notification Settings",
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => NotificationSettingScreen(),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 20),
             const Divider(thickness: 1, indent: 40, endIndent: 40),

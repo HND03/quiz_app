@@ -7,6 +7,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:quiz_app/view/user/home_screen.dart';
 import 'package:quiz_app/view/user/login_screen.dart';
 import 'firebase_options.dart';
+import 'model/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +21,9 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   final savedTheme = prefs.getString('themeMode') ?? 'light';
   final themeMode = savedTheme == 'dark' ? ThemeMode.dark : ThemeMode.light;
+
+  await NotificationService.initialize();
+  await NotificationService.requestPermission();
 
   runApp(MyApp(initialThemeMode: themeMode));
 }
