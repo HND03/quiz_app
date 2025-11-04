@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:quiz_app/model/category.dart';
 import 'package:quiz_app/model/question.dart';
@@ -39,14 +40,20 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
   final _timeLimitController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+
   bool _isLoading = false;
   String? _selectedCategoryId;
+  String? _displayCategoryName;
   List<QuestionFromItem> _questionsItems = [];
 
   @override
   void initState() {
     super.initState();
     _selectedCategoryId = widget.categoryId;
+    _displayCategoryName = widget.categoryName;
+    if (widget.categoryId != null && widget.categoryName == null) {
+      _loadCategoryName(widget.categoryId!);
+    }
     _addQuestion();
   }
 
@@ -58,6 +65,38 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
       item.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _loadCategoryName(String categoryId) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('categories').doc(categoryId).get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        final name = data['name'] as String?;
+        if (mounted) {
+          setState(() {
+            _displayCategoryName = name ?? 'Selected Category';
+            // ensure _selectedCategoryId is set
+            _selectedCategoryId = categoryId;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _displayCategoryName = widget.categoryName ?? 'Selected Category';
+            _selectedCategoryId = categoryId;
+          });
+        }
+      }
+    } catch (e) {
+      // ignore errors but set safe defaults
+      if (mounted) {
+        setState(() {
+          _displayCategoryName = widget.categoryName ?? 'Selected Category';
+          _selectedCategoryId = categoryId;
+        });
+      }
+    }
   }
 
   void _addQuestion() {
@@ -111,6 +150,7 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
           categoryId: _selectedCategoryId!,
           timeLimit: int.parse(_timeLimitController.text),
           questions: questions,
+          createdBy: FirebaseAuth.instance.currentUser!.uid,
           createdAt: DateTime.now(),
         ).toMap(),
       );
@@ -214,10 +254,20 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
                 value == null || value.isEmpty ? "Please enter quiz title" : null,
               ),
               const SizedBox(height: 20),
-              if (widget.categoryId == null)
+              // Nếu categoryId đã được truyền -> hiển thị category cố định (không chọn lại)
+              if (widget.categoryId != null)
+                TextFormField(
+                  enabled: false,
+                  initialValue: _displayCategoryName ?? widget.categoryName ?? "Selected Category",
+                  decoration: const InputDecoration(
+                    labelText: "Category",
+                    prefixIcon: Icon(Icons.category, color: AppTheme.primaryColor),
+                  ),
+                )
+              else
+              // dropdown bình thường (giữ nguyên code hiện tại)
                 StreamBuilder<QuerySnapshot>(
-                  stream:
-                  _firestore.collection("categories").orderBy('name').snapshots(),
+                  stream: _firestore.collection("categories").orderBy('name').snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.hasError) return const Text("Error loading categories");
                     if (!snapshot.hasData) {
@@ -229,32 +279,26 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
                     }
 
                     final categories = snapshot.data!.docs
-                        .map((doc) => Category.fromMap(
-                      doc.id,
-                      doc.data() as Map<String, dynamic>,
-                    ))
+                        .map((doc) => Category.fromMap(doc.id, doc.data() as Map<String, dynamic>))
                         .toList();
 
                     return DropdownButtonFormField<String>(
-                      value: _selectedCategoryId,
+                      value: categories.any((c) => c.id == _selectedCategoryId) ? _selectedCategoryId : null,
                       decoration: const InputDecoration(
                         labelText: "Category",
                         hintText: "Select category",
                         prefixIcon: Icon(Icons.category, color: AppTheme.primaryColor),
                       ),
                       items: categories
-                          .map(
-                            (category) => DropdownMenuItem(
-                          value: category.id,
-                          child: Text(category.name),
-                        ),
-                      )
+                          .map((category) => DropdownMenuItem(
+                        value: category.id,
+                        child: Text(category.name),
+                      ))
                           .toList(),
                       onChanged: (value) {
                         setState(() => _selectedCategoryId = value);
                       },
-                      validator: (value) =>
-                      value == null || value.isEmpty ? "Please select a category" : null,
+                      validator: (value) => value == null || value.isEmpty ? "Please select a category" : null,
                     );
                   },
                 ),

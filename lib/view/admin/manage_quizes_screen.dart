@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:quiz_app/model/quiz.dart';
 import 'package:quiz_app/theme/theme.dart';
@@ -19,6 +20,7 @@ class ManageQuizesScreen extends StatefulWidget {
 class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
+  final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
   String _searchQuery = '';
   String? _selectedCategoryId;
@@ -59,6 +61,12 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
 
   Stream<QuerySnapshot> _getQuizStream() {
     Query query = _firestore.collection('quizzes');
+
+    // ✅ Lọc theo người tạo quiz
+    if (currentUserId != null) {
+      query = query.where('createdBy', isEqualTo: currentUserId);
+    }
+
     String? filterCategoryId = _selectedCategoryId ?? widget.categoryId;
     if (_selectedCategoryId != null) {
       query = query.where('categoryId', isEqualTo: filterCategoryId);
@@ -111,6 +119,18 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
     final cardColor = theme.cardColor;
     final scaffoldBg = theme.scaffoldBackgroundColor;
 
+    // ⚠️ Thêm đoạn kiểm tra đăng nhập ở đây
+    if (currentUserId == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text(
+            "Please log in to view your quizzes.",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: cardColor,
@@ -119,12 +139,26 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
           IconButton(
             icon: Icon(Icons.add_circle_outline, color: AppTheme.primaryColor),
             onPressed: () {
+              // chọn id ưu tiên là _selectedCategoryId (do user chọn ở dropdown),
+              // nếu null thì fallback về widget.categoryId (trường hợp truy cập màn hình đã có sẵn)
+              final chosenId = _selectedCategoryId ?? widget.categoryId;
+
+              // tìm tên category từ _categories nếu có
+              String? chosenName;
+              if (chosenId != null) {
+                final found = _categories.firstWhere(
+                      (c) => c.id == chosenId,
+                  orElse: () => Category(id: chosenId, name: widget.categoryName ?? 'Unknown', description: ''),
+                );
+                chosenName = found.name;
+              }
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => AddQuizScreen(
-                    categoryId: widget.categoryId,
-                    categoryName: widget.categoryName,
+                    categoryId: chosenId,
+                    categoryName: chosenName,
                   ),
                 ),
               );
@@ -245,12 +279,26 @@ class _ManageQuizesScreenState extends State<ManageQuizesScreen> {
                         const SizedBox(height: 8),
                         ElevatedButton(
                           onPressed: () {
+                            // chọn id ưu tiên là _selectedCategoryId (do user chọn ở dropdown),
+                            // nếu null thì fallback về widget.categoryId (trường hợp truy cập màn hình đã có sẵn)
+                            final chosenId = _selectedCategoryId ?? widget.categoryId;
+
+                            // tìm tên category từ _categories nếu có
+                            String? chosenName;
+                            if (chosenId != null) {
+                              final found = _categories.firstWhere(
+                                    (c) => c.id == chosenId,
+                                orElse: () => Category(id: chosenId, name: widget.categoryName ?? 'Unknown', description: ''),
+                              );
+                              chosenName = found.name;
+                            }
+
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => AddQuizScreen(
-                                  categoryId: widget.categoryId,
-                                  categoryName: widget.categoryName,
+                                  categoryId: chosenId,
+                                  categoryName: chosenName,
                                 ),
                               ),
                             );

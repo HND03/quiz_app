@@ -19,15 +19,27 @@ class _NotificationSettingScreenState extends State<NotificationSettingScreen> {
   @override
   void initState() {
     super.initState();
-    _loadStatus();
+    _loadSettings();
   }
 
-  Future<void> _loadStatus() async {
+  // ✅ Load trạng thái đã lưu trong SharedPreferences
+  Future<void> _loadSettings() async {
+    setState(() => _isLoading = true);
+
+    await NotificationService.initialize();
     await NotificationService.requestPermission();
-    final isActive = await NotificationService.isDailyScheduled();
-    setState(() => _isDailyEnabled = isActive);
+
+    final isEnabled = await NotificationService.isDailyScheduled();
+    final savedTime = await NotificationService.getSavedTime();
+
+    setState(() {
+      _isDailyEnabled = isEnabled;
+      _selectedTime = savedTime;
+      _isLoading = false;
+    });
   }
 
+  // ✅ Bật/tắt notification và lưu trạng thái
   Future<void> _toggleDailyNotification(bool value) async {
     setState(() => _isLoading = true);
 
@@ -56,6 +68,7 @@ class _NotificationSettingScreenState extends State<NotificationSettingScreen> {
     });
   }
 
+  // ✅ Chọn thời gian và lưu lại
   Future<void> _pickTime() async {
     final picked = await showTimePicker(
       context: context,
@@ -71,19 +84,23 @@ class _NotificationSettingScreenState extends State<NotificationSettingScreen> {
 
     if (picked != null) {
       setState(() => _selectedTime = picked);
+
       if (_isDailyEnabled) {
         await NotificationService.scheduleDaily(
           hour: picked.hour,
           minute: picked.minute,
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              "Updated daily reminder to ${picked.format(context)} ✅",
-            ),
-          ),
-        );
+      } else {
+        await NotificationService.saveTimeOnly(picked);
       }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Reminder time set to ${picked.format(context)} ✅",
+          ),
+        ),
+      );
     }
   }
 
@@ -126,18 +143,20 @@ class _NotificationSettingScreenState extends State<NotificationSettingScreen> {
               await Future.delayed(const Duration(milliseconds: 800));
 
               if (mounted) {
-                Navigator.pop(context); // 👈 Quay lại ProfileScreen
+                Navigator.pop(context);
               }
             },
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        padding:
+        const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch, // 👈 giúp các child full width
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // --- Daily Reminder ---
             _buildSectionCard(
@@ -146,7 +165,7 @@ class _NotificationSettingScreenState extends State<NotificationSettingScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Expanded( // 👈 giúp text chiếm phần còn lại, tránh tràn
+                  Expanded(
                     child: Text(
                       "Enable daily notifications",
                       style: TextStyle(
@@ -170,90 +189,90 @@ class _NotificationSettingScreenState extends State<NotificationSettingScreen> {
             // --- Notification Time ---
             _buildSectionCard(
               title: "Notification Time",
-              child: Container(
-                width: double.infinity, // 👈 ép section full width
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            DateFormat.jm().format(
-                              DateTime(0, 0, 0, _selectedTime.hour, _selectedTime.minute),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          DateFormat.jm().format(
+                            DateTime(
+                              0,
+                              0,
+                              0,
+                              _selectedTime.hour,
+                              _selectedTime.minute,
                             ),
-                            style: TextStyle(fontSize: 16, color: textColor),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "Choose when to get your daily study reminder",
-                            style: TextStyle(color: secondaryTextColor, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          style: TextStyle(fontSize: 16, color: textColor),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      ),
-                      onPressed: _isLoading ? null : _pickTime,
-                      child: const Text("Change"),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Choose when to get your daily study reminder",
+                          style: TextStyle(
+                            color: secondaryTextColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                    ),
+                    onPressed: _isLoading ? null : _pickTime,
+                    child: const Text("Change"),
+                  ),
+                ],
               ),
             ),
 
             const SizedBox(height: 40),
 
             // --- Save Button ---
-            SizedBox(
-              width: double.infinity, // 👈 full width
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: _isLoading
+                  ? null
+                  : () async {
+                await _toggleDailyNotification(_isDailyEnabled);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content:
+                    Text("Settings saved successfully ✅"),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                onPressed: _isLoading
-                    ? null
-                    : () async {
-                  await _toggleDailyNotification(_isDailyEnabled);
-
-                  // Hiển thị thông báo đã lưu
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Settings saved successfully ✅")),
-                  );
-
-                  // Chờ 1 chút để người dùng thấy SnackBar, sau đó quay lại Profile
-                  await Future.delayed(const Duration(milliseconds: 800));
-
-                  if (mounted) {
-                    Navigator.pop(context); // 👈 Quay về ProfileScreen
-                  }
-                },
-
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                  "Save Settings",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
-                ),
+                );
+                await Future.delayed(
+                    const Duration(milliseconds: 800));
+                if (mounted) Navigator.pop(context);
+              },
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text(
+                "Save Settings",
+                style:
+                TextStyle(fontSize: 16, color: Colors.white),
               ),
             ),
           ],
         ),
       ),
-
     );
   }
 
@@ -274,11 +293,14 @@ class _NotificationSettingScreenState extends State<NotificationSettingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: textColor)),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            ),
             const SizedBox(height: 12),
             child,
           ],

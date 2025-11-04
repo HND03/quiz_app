@@ -8,6 +8,7 @@ class Quiz {
   final List<Question> questions;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String createdBy;
 
   Quiz({
     required this.id,
@@ -15,6 +16,7 @@ class Quiz {
     required this.categoryId,
     required this.timeLimit,
     required this.questions,
+    required this.createdBy,
     this.createdAt,
     this.updatedAt,
   });
@@ -28,6 +30,7 @@ class Quiz {
       questions: ((map['questions'] ?? []) as List)
           .map((e) => Question.fromMap(e))
           .toList(),
+      createdBy: map['createdBy'] ?? '',
       createdAt: map['createdAt']?.toDate(),
       updatedAt: map['updatedAt']?.toDate(),
     );
@@ -38,6 +41,7 @@ class Quiz {
       'categoryId': categoryId,
       'timeLimit': timeLimit,
       'questions': questions.map((e) => e.toMap()).toList(),
+      'createdBy': createdBy,
       if(isUpdate)'updatedAt': DateTime.now(),
       'createdAt': createdAt,
     };
@@ -48,6 +52,7 @@ class Quiz {
     String? categoryId,
     int? timeLimit,
     List<Question>? questions,
+    String? createdBy,
     DateTime? createdAt,
   }) {
     return Quiz(
@@ -56,6 +61,7 @@ class Quiz {
       categoryId: categoryId ?? this.categoryId,
       timeLimit: timeLimit ?? this.timeLimit,
       questions: questions ?? this.questions,
+      createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt,
     );
   }
