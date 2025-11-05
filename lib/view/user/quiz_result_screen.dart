@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
@@ -8,6 +10,7 @@ class QuizResultScreen extends StatefulWidget {
   final Quiz quiz;
   final int totalQuestions;
   final int correctAnswers;
+
   final Map<int, int?> selectedAnswers;
 
   const QuizResultScreen({
@@ -23,6 +26,39 @@ class QuizResultScreen extends StatefulWidget {
 }
 
 class _QuizResultScreenState extends State<QuizResultScreen> {
+  late double score;
+  late int scorePercentage;
+
+  Future<void> _saveQuizResult() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final firestore = FirebaseFirestore.instance;
+
+      await firestore.collection("quizResults").add({
+        "userId": user.uid,
+        "quizId": widget.quiz.id,
+        "quizTitle": widget.quiz.title,
+        "categoryId": widget.quiz.categoryId,
+        "score": score, // ✅ dùng biến score trong state
+        "scorePercentage": scorePercentage, // thêm phần trăm nếu cần
+        "totalQuestions": widget.totalQuestions,
+        "correctAnswers": widget.correctAnswers,
+        "completedAt": DateTime.now(),
+      });
+    } catch (e) {
+      print("Error saving quiz result: $e");
+    }
+  }
+
+  void initState() {
+    super.initState();
+    score = widget.correctAnswers / widget.totalQuestions;
+    scorePercentage = (score * 100).round();
+    _saveQuizResult(); // ✅ Gọi hàm lưu kết quả khi mở màn hình kết quả
+  }
+
   Widget _buildStatCard(
     String title,
     String value,

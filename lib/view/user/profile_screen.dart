@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:quiz_app/theme/theme.dart';
 import 'package:quiz_app/view/user/theme_selection_screen.dart';
+import 'package:quiz_app/view/user/quiz_progress_screen.dart';
 
 import '../../main.dart';
 import 'change_password_screen.dart';
@@ -435,6 +436,18 @@ class _ProfileScreenState extends State<ProfileScreen>
                   context,
                   MaterialPageRoute(
                     builder: (_) => NotificationSettingScreen(),
+                  ),
+                );
+              },
+            ),
+            _buildSettingTile(
+              icon: Icons.bar_chart,
+              title: "User Stats",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => QuizProgressScreen(),
                   ),
                 );
               },
